@@ -1,19 +1,40 @@
-# Byte-compiled / optimized / DLL files
+# deps
+node_modules/
+.pnp
+.pnp.js
+
+# next
+.next/
+out/
+build/
+dist/
+
+# env
+.env
+.env.local
+.env*.local
+
+# test / tooling
+coverage/
+playwright-report/
+test-results/
+blob-report/
+.playwright/
+.vitest/
+
+# netlify
+.netlify/
+
+# python (vendored reference repo)
 __pycache__/
 *.py[cod]
-*$py.class
-
-# C extensions
 *.so
-
-# Distribution / packaging
-dist/
-build/
 *.egg-info/
-
-# Poetry
 .poetry/
 venv/
+
+# editors / os
 .idea/
 .vscode/
-
+.DS_Store
+*.log

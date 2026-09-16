@@ -1,0 +1,46 @@
+{
+  "name": "jellyvid",
+  "version": "1.0.0",
+  "private": true,
+  "description": "JellyVid - AI video and image studio with credits that never expire and refunds you don't have to ask for.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint --max-warnings 0 && tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "smoke:live": "node --experimental-strip-types scripts/smoke-live.ts",
+    "db:push": "node scripts/db-push.mjs"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^11.1.0",
+    "fast-png": "^6.3.0",
+    "jpeg-js": "^0.4.4",
+    "next": "^15.5.4",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.7",
+    "@netlify/plugin-nextjs": "^5.15.13",
+    "@playwright/test": "^1.55.0",
+    "@tailwindcss/postcss": "^4.1.13",
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "eslint": "^9.36.0",
+    "eslint-config-next": "^15.5.4",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.13",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}
