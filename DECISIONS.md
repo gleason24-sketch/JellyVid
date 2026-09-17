@@ -1,0 +1,155 @@
+# Decisions
+
+Every deviation from the original brief, and every non-obvious choice, with the
+reason. Newest first within each section.
+
+## Architecture
+
+### No Supabase service-role key; access via SECURITY DEFINER RPCs
+
+**Brief said:** Supabase with auth, Postgres, Storage, RLS on.
+
+**What happened:** The tooling available in this environment exposes Supabase
+*publishable* keys only — there is no path to a service-role key or a database
+password. A publishable key plus permissive RLS policies would have meant
+wallet and ledger rows readable by anyone who read the JS bundle.
+
+**Decision:** Tables are RLS-locked with **no policies at all**, so the anon key
+can read nothing. Every operation is a `SECURITY DEFINER` function that requires
+`JELLYVID_DB_SECRET`, which exists only in server environment variables.
+
+**Why this is better than the default, not just a workaround:** it forced the
+credit arithmetic into the database. A spend is one conditional `UPDATE` that
+fails closed; a refund is protected by a partial unique index. Double-spends and
+double-refunds are impossible by construction rather than by careful handler
+code. `tests/database.test.ts` fires five concurrent 40-credit jobs at a
+100-credit wallet and asserts exactly two succeed.
+
+**Cost:** more SQL, and a shared secret to rotate (`jv_set_app_secret`).
+
+### Anonymous-first sessions instead of magic-link auth
+
+**Brief said:** Supabase auth, magic link + Google.
+
+**Decision:** First generation mints a real account and wallet behind an
+HMAC-signed httpOnly cookie. Email is optional and only moves the wallet
+between devices.
+
+**Reason:** the mission is a first generation in under 60 seconds. A magic link
+is an inbox round trip in the middle of that — and Supabase's built-in email has
+low sending limits that would throttle exactly the launch traffic we want.
+
+**Cross-device:** claiming an email issues a recovery code (shown once, stored
+hashed). Email + code restores the wallet. No SMTP dependency, which means no
+silent failure mode where a user's credits are stranded behind an undelivered
+email. If SMTP is added later, the magic link becomes an additional path, not a
+replacement — the recovery code still works.
+
+### Netlify Blobs for output mirroring, not Supabase Storage
+
+Provider URLs expire in about seven days. Supabase Storage writes would need a
+policy permitting the anon key to upload, which reopens the hole the RPC design
+just closed. Netlify Blobs is server-side only, needs no key, and is native to
+the deploy target. `src/lib/storage.ts` falls back to a temp directory locally
+and under test.
+
+### Polling plus a scheduled sweep, not webhooks
+
+The API supports webhooks. We poll (2s easing to 10s, as documented) and run a
+five-minute reconciliation sweep. Rationale: one fewer public endpoint to
+authenticate, and the sweep is needed regardless — it is what makes the refund
+promise hold when someone closes the tab mid-generation, which a webhook alone
+would not. Worth revisiting under real load.
+
+### `timeout` and `duplicate` are our statuses, not the provider's
+
+Higgsfield's terminal states are `completed`, `failed`, `nsfw`, `canceled`.
+JellyVid adds two more so that an abandoned job and a paid re-roll returning
+what you already have both become *refundable outcomes* rather than silence.
+
+## Product
+
+### Credit costs are retail prices, not provider costs
+
+`src/lib/models.ts` prices a draft video at 40 credits and a final at 120. These
+are JellyVid's numbers. Higgsfield does not publish per-endpoint costs in its
+docs, so **these are not yet calibrated against real billing** and must be
+before charging real money. Flagged in `TODO.md` as a launch blocker.
+
+### 1 credit = 1 cent, with no volume discount
+
+The brief said "one flat price table". A tiered discount is still a pricing
+puzzle, and puzzles are what complaint #2 is about. Every pack is the same rate,
+so there is no optimal moment to buy and nothing to feel clever or foolish
+about. `everyPackIsTheSameRate()` is asserted in the test suite, so the promise
+breaks the build if someone edits it away.
+
+### The rewriter is deterministic and local, not an LLM
+
+Complaint #5 needs a one-click "Rewrite safely". An LLM call would need another
+API key and would add a failure mode to a path the user only reaches when
+something has *already* gone wrong. A rules table handles the common cases,
+costs nothing, cannot time out, and states exactly what it changed.
+`rewriteWithLlm` behind `JELLYVID_LLM_API_KEY` is the documented upgrade path.
+
+### Video deduplication is weaker than image deduplication
+
+The pHash check needs a decodable still. There is no pure-JS mp4 decoder here
+and no ffmpeg on the serverless target, so video outputs dedupe on SHA-256 of
+the bytes only — a byte-identical repeat is caught, a perceptually
+near-identical one is not. Images get the full perceptual check. Stated plainly
+rather than implied, in `docs/HIGGSFIELD_NOTES.md` and in `TODO.md`.
+
+### Stripe is built but gated
+
+The full flow exists — Checkout session, signed webhook, idempotent crediting
+via a unique `external_ref`. With no `STRIPE_SECRET_KEY` the pricing page says
+card payments are off, in plain words. Showing a Buy button that fails at the
+last step would be exactly the kind of thing this product exists to oppose.
+
+### The vendored repo at the root was not the API SDK
+
+The repository supplied as "the open source repo of Higgsfield" is
+`higgsfield-ai/higgsfield`, a **PyTorch distributed-training framework** — a
+different project that shares the name. It has no bearing on the video API. It
+is preserved under `reference/higgsfield-oss/` with its LICENSE and NOTICES
+intact; its PyPI-publishing GitHub workflows were removed, as they referenced
+another project's release secrets. The API integration was built from
+`docs.higgsfield.ai` and live probing instead.
+
+## Bugs found while building
+
+### Session cookie was `Secure` based on `NODE_ENV`
+
+A production build served over plain HTTP — local `next start`, a preview box,
+the e2e suite — set a `Secure` cookie the client silently dropped, so **every
+request minted a brand-new wallet**. Found by the e2e suite, whose balance
+assertions could not be satisfied. Now derived from whether the configured site
+URL is HTTPS.
+
+### pgcrypto is not on the default search path
+
+Supabase installs pgcrypto into the `extensions` schema. Functions pinned to
+`search_path = public` (correct practice, to prevent hijacking) could not see
+`digest()`. Fixed by pinning to `public, extensions` — still explicit, still
+safe. Migration `0003`.
+
+### `jv_wallet_json` had no secret parameter
+
+It is an internal serialiser, so route handlers could not reach it through the
+guarded RPC path. Added `jv_wallet_get` as its public face. Migration `0004`.
+
+## Testing
+
+### The e2e suite raises the signup rate limit rather than removing it
+
+Production caps free-credit signups at 5 per IP per day. The whole suite shares
+one loopback address. `JELLYVID_SIGNUPS_PER_IP_PER_DAY` was already
+configuration, so the suite raises it instead of disabling the check — the
+limiter still runs, exercising the same code path.
+
+### Playwright uses the image's Chromium
+
+The pinned `@playwright/test` wants a browser build the image does not carry.
+`JELLYVID_CHROMIUM_PATH` points at the installed one. Unset, it falls back to a
+normal `npx playwright install` browser.

@@ -80,7 +80,11 @@ export function sessionCookieOptions() {
   return {
     httpOnly: true,
     sameSite: 'lax' as const,
-    secure: process.env.NODE_ENV === 'production',
+    // Keyed to the origin we are actually served from, not to NODE_ENV. A
+    // production build served over plain HTTP (local `next start`, a preview
+    // box, the e2e suite) would otherwise set a Secure cookie the client drops
+    // silently -- and every request would mint a fresh wallet.
+    secure: env.siteUrl.startsWith('https://'),
     path: '/',
     maxAge: SESSION_MAX_AGE,
   };

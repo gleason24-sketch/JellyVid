@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
+import DemoBanner from '@/components/demo-banner';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -131,6 +132,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Skip to content
         </a>
         <Nav />
+        <DemoBanner />
         <main id="main">{children}</main>
         <Footer />
       </body>
