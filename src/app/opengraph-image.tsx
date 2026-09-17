@@ -13,7 +13,11 @@ export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
 export default async function OpenGraphImage() {
-  const portrait = await readFile(join(process.cwd(), 'public', 'reel', 'portrait-og.jpg'));
+  const [portrait, archivoBlack] = await Promise.all([
+    readFile(join(process.cwd(), 'public', 'reel', 'portrait-og.jpg')),
+    // A static TTF, because the OG renderer cannot use next/font's woff2 output.
+    readFile(join(process.cwd(), 'src', 'app', 'fonts', 'ArchivoBlack-Regular.ttf')),
+  ]);
   const portraitSrc = `data:image/jpeg;base64,${portrait.toString('base64')}`;
 
   return new ImageResponse(
@@ -25,7 +29,7 @@ export default async function OpenGraphImage() {
           display: 'flex',
           background: '#000',
           color: '#fff',
-          fontFamily: 'sans-serif',
+          fontFamily: 'Archivo Black',
           position: 'relative',
         }}
       >
@@ -70,20 +74,19 @@ export default async function OpenGraphImage() {
             style={{
               display: 'flex',
               flexDirection: 'column',
-              marginTop: 26,
-              fontSize: 112,
-              fontWeight: 900,
+              marginTop: 24,
+              fontSize: 86,
+              fontWeight: 400,
               lineHeight: 0.92,
-              letterSpacing: -4,
+              letterSpacing: -3,
             }}
           >
             <span>PUT YOURSELF</span>
-            <span style={{ display: 'flex' }}>
-              IN THE&nbsp;<span style={{ color: '#ff2bd6' }}>MOVIE.</span>
-            </span>
+            <span>IN THE</span>
+            <span style={{ color: '#ff2bd6' }}>MOVIE.</span>
           </div>
 
-          <div style={{ marginTop: 30, fontSize: 28, color: '#9b9ba6', lineHeight: 1.3 }}>
+          <div style={{ marginTop: 28, fontSize: 24, color: '#9b9ba6', lineHeight: 1.3, maxWidth: 620 }}>
             One selfie. One tap. A cinematic video of you in it.
           </div>
 
@@ -128,6 +131,9 @@ export default async function OpenGraphImage() {
         </div>
       </div>
     ),
-    size,
+    {
+      ...size,
+      fonts: [{ name: 'Archivo Black', data: archivoBlack, weight: 400, style: 'normal' }],
+    },
   );
 }
