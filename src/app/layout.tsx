@@ -37,13 +37,11 @@ export const metadata: Metadata = {
     title: 'JellyVid — put yourself in the movie',
     description:
       'Upload one selfie, pick a scene, get a cinematic video of you in it. 200 free credits, no signup.',
-    images: ['/icon-512.png'],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'JellyVid — put yourself in the movie',
     description: 'Upload one selfie, pick a scene, star in it. 200 free credits, no signup.',
-    images: ['/icon-512.png'],
   },
 };
 

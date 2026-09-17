@@ -85,7 +85,7 @@ export default function HeroReel({
       </div>
 
       {/* The selfie that all of this came from, pinned to the corner. */}
-      <div className="absolute -left-3 bottom-8 w-[34%] rotate-[-6deg] sm:-left-8">
+      <div className="absolute -left-3 bottom-[30%] w-[32%] rotate-[-6deg] sm:-left-8">
         <div className="jv-tile aspect-[3/4] ring-2 ring-black shadow-[0_18px_50px_-12px_rgba(0,0,0,0.9)]">
           <Image
             src={portrait}

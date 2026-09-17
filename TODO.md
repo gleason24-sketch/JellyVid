@@ -26,6 +26,11 @@ Every row has a test named after it in `tests/complaint-fixes.test.ts`.
 - [x] Eight one-tap scene presets, so no prompt has to be written
 - [x] Draft→final carries the same reference set forward
 - [x] Public gallery at `/gallery`, surfaced on the landing page
+- [x] Demo reel: one synthetic SOUL 2 portrait cast into all eight scenes via
+      Seedance 2.5 reference-to-video (137.5 consumer credits, authorised);
+      plays in the hero, every scene tile, and the studio picker
+- [x] Placeholder outputs never shown in the public gallery while `HF_MOCK` is on
+- [x] Link cards (`opengraph-image` / `twitter-image`) built from the portrait
 - [ ] Soul character / Soul reference (image-side face models) not wired yet
 - [ ] Seedance 2.5 video-edit and video-extend not wired yet
 
