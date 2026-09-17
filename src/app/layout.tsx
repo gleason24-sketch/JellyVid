@@ -48,7 +48,7 @@ function Nav() {
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--color-line)] bg-[rgba(8,6,12,0.82)] backdrop-blur-xl">
       <nav
-        className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3"
+        className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-3 sm:gap-3"
         aria-label="Main navigation"
       >
         <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="JellyVid home">
@@ -58,15 +58,19 @@ function Nav() {
             width={32}
             height={32}
             priority
-            className="h-8 w-8 object-contain"
+            className="h-7 w-7 object-contain sm:h-8 sm:w-8"
           />
-          <span className="text-lg font-extrabold tracking-tight jv-glow-pink">JellyVid</span>
+          <span className="text-base font-extrabold tracking-tight jv-glow-pink sm:text-lg">
+            JellyVid
+          </span>
         </Link>
 
         <div className="ml-auto flex items-center gap-1 text-sm sm:gap-2">
+          {/* At 320px the bar cannot hold both text links plus the CTA; pricing
+              is one tap away from the footer, the wallet and the studio. */}
           <Link
             href="/pricing"
-            className="rounded-full px-2.5 py-2 text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)] sm:px-3"
+            className="hidden rounded-full px-2.5 py-2 text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)] min-[380px]:block sm:px-3"
           >
             Pricing
           </Link>
@@ -82,8 +86,13 @@ function Nav() {
           >
             Wallet
           </Link>
-          <Link href="/studio" className="jv-btn jv-btn-primary !min-h-10 !px-4 !text-sm">
-            Open studio
+          <Link
+            href="/studio"
+            className="jv-btn jv-btn-primary !min-h-10 whitespace-nowrap !px-4 !text-sm"
+          >
+            {/* "Open studio" wraps at 390px, so the phone gets the short label. */}
+            <span className="sm:hidden">Studio</span>
+            <span className="hidden sm:inline">Open studio</span>
           </Link>
         </div>
       </nav>
@@ -105,12 +114,23 @@ function Footer() {
             You see the price before you click.
           </p>
         </div>
-        <nav aria-label="Footer" className="flex flex-wrap gap-x-6 gap-y-2">
-          <Link href="/studio" className="hover:text-[var(--color-text)]">Studio</Link>
-          <Link href="/pricing" className="hover:text-[var(--color-text)]">Pricing</Link>
-          <Link href="/wallet" className="hover:text-[var(--color-text)]">Wallet</Link>
-          <Link href="/stats" className="hover:text-[var(--color-text)]">Stats</Link>
-          <Link href="/promises" className="hover:text-[var(--color-text)]">Our promises</Link>
+        <nav aria-label="Footer" className="flex flex-wrap gap-x-4">
+          {[
+            ['/studio', 'Studio'],
+            ['/pricing', 'Pricing'],
+            ['/wallet', 'Wallet'],
+            ['/stats', 'Stats'],
+            ['/promises', 'Our promises'],
+          ].map(([href, label]) => (
+            <Link
+              key={href}
+              href={href}
+              // py-2.5 keeps these above the 44px touch target on a phone.
+              className="inline-flex min-h-11 items-center hover:text-[var(--color-text)]"
+            >
+              {label}
+            </Link>
+          ))}
         </nav>
       </div>
       <p className="mx-auto mt-8 max-w-6xl text-xs text-[var(--color-faint)]">

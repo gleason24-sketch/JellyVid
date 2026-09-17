@@ -153,3 +153,20 @@ limiter still runs, exercising the same code path.
 The pinned `@playwright/test` wants a browser build the image does not carry.
 `JELLYVID_CHROMIUM_PATH` points at the installed one. Unset, it falls back to a
 normal `npx playwright install` browser.
+
+### Static pages revalidate instead of being frozen at build
+
+The landing and promises pages were `force-static`, which baked the demo banner
+into the HTML at build time. Removing `HF_MOCK` would then leave a stale "Demo
+mode" notice up until the next deploy — a page lying about what the product is
+doing, which is the one failure mode this product cannot have. They now use
+`revalidate = 300`: still statically served, but regenerated within five minutes
+of a server-config change.
+
+### Mobile nav drops the Pricing link below 380px
+
+At 320px (original iPhone SE) the bar could not hold the wordmark, two text
+links and the CTA, and overflowed by 42px. Pricing is hidden under 380px — it
+stays one tap away in the footer, the wallet and the studio's Top up button.
+Horizontal overflow is now 0px across iPhone SE, iPhone 13, Pixel 7 and iPad
+Mini on all six pages.

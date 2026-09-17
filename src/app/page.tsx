@@ -6,7 +6,10 @@ import { SIGNUP_GRANT_CREDITS } from '@/lib/session';
 import { TaskIcon } from '@/components/icons';
 import { Section } from '@/components/ui';
 
-export const dynamic = 'force-static';
+// Statically rendered for speed, but regenerated every five minutes so a
+// server-config change (notably HF_MOCK, which the demo banner reflects)
+// cannot stay baked into the HTML until the next deploy.
+export const revalidate = 300;
 
 const PROMISES = [
   {
@@ -165,8 +168,8 @@ export default function LandingPage() {
       </Section>
 
       <Section className="py-10" title="How this compares">
-        <div className="jv-card overflow-hidden">
-          <table className="w-full text-left text-sm">
+        <div className="jv-card overflow-x-auto">
+          <table className="w-full min-w-[340px] text-left text-sm">
             <caption className="sr-only">
               JellyVid compared with the typical AI generation studio
             </caption>

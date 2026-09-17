@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-export const dynamic = 'force-static';
+// Statically rendered for speed, but regenerated every five minutes so a
+// server-config change (notably HF_MOCK, which the demo banner reflects)
+// cannot stay baked into the HTML until the next deploy.
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: 'Our promises',
