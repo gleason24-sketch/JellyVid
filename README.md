@@ -1,122 +1,101 @@
-# higgsfield - multi node training without crying
+# JellyVid
 
+**Put yourself in the movie.**
 
-Higgsfield is an open-source, fault-tolerant, highly scalable GPU orchestration, and a machine learning framework designed for training models with billions to trillions of parameters, such as Large Language Models (LLMs).
+Upload one selfie. Tap a scene. Get a cinematic video of you in it, in about a
+minute. No app, no signup, no API key.
 
-[![PyPI version](https://badge.fury.io/py/higgsfield.svg)](https://badge.fury.io/py/higgsfield)
+JellyVid is built on the Higgsfield API, around the one capability it has that
+other providers do not: **Seedance 2.5 reference-to-video with real face
+inputs, available in the US**. Eight curated scenes mean you never have to write
+a prompt.
 
-![architecture](https://raw.githubusercontent.com/higgsfield/higgsfield/main/docs/static/architecture.png)
+The landing page is the demo: one synthetic portrait, cast by Seedance 2.5 into
+all eight scenes, playing in the hero and every scene tile. See `public/reel/`.
 
-Higgsfield serves as a GPU workload manager and machine learning framework with five primary functions:
+Underneath it is a studio that refuses to play games with your money — credits
+that never expire, refunds you don't have to ask for, and the price on the
+button before you press it. See [`CLAUDE.md`](CLAUDE.md) for the complaint → fix
+map and [`DECISIONS.md`](DECISIONS.md) for why it is built this way.
 
-1. Allocating exclusive and non-exclusive access to compute resources (nodes) to users for their training tasks.
-2. Supporting ZeRO-3 deepspeed API and fully sharded data parallel API of PyTorch, enabling efficient sharding for trillion-parameter models.
-3. Offering a framework for initiating, executing, and monitoring the training of large neural networks on allocated nodes.
-4. Managing resource contention by maintaining a queue for running experiments.
-5. Facilitating continuous integration of machine learning development through seamless integration with GitHub and GitHub Actions.
-   Higgsfield streamlines the process of training massive models and empowers developers with a versatile and robust toolset.
-## Install
+## The governing rule
+
+A promise about money is enforced in the database or it is not a promise.
+
+- Credits cannot expire because **no expiry column exists**.
+- A spend is a single conditional `UPDATE` that fails closed, so a wallet cannot
+  go negative or be double-debited.
+- A refund happens in the **same statement** that records the failure, guarded by
+  a partial unique index, so it cannot be applied twice or forgotten.
+
+`tests/database.test.ts` proves each of these against the real database,
+including firing five concurrent 40-credit jobs at a 100-credit wallet and
+asserting exactly two succeed.
+
+## Quick start
 
 ```bash
-$ pip install higgsfield==0.0.3
+npm install
+cp .env.example .env.local     # fill in Supabase + Higgsfield values
+npm run dev
 ```
 
+Set `HF_MOCK=1` to run the entire pipeline — submit, poll, download, hash,
+mirror, refund — against local fixtures at zero cost:
 
-
-## Train example
-
-That's all you have to do in order to train LLaMa in a distributed setting:
-
-```python
-from higgsfield.llama import Llama70b
-from higgsfield.loaders import LlamaLoader
-from higgsfield.experiment import experiment
-
-import torch.optim as optim
-from alpaca import get_alpaca_data
-
-@experiment("alpaca")
-def train(params):
-    model = Llama70b(zero_stage=3, fast_attn=False, precision="bf16")
-
-    optimizer = optim.AdamW(model.parameters(), lr=1e-5, weight_decay=0.0)
-
-    dataset = get_alpaca_data(split="train")
-    train_loader = LlamaLoader(dataset, max_words=2048)
-
-    for batch in train_loader:
-        optimizer.zero_grad()
-        loss = model(batch)
-        loss.backward()
-        optimizer.step()
-
-    model.push_to_hub('alpaca-70b')
+```bash
+HF_MOCK=1 npm run dev
 ```
 
-## How it's all done?
+## Commands
 
-1. We install all the required tools in your server (Docker, your project's deploy keys, higgsfield binary).
-2. Then we generate deploy & run workflows for your experiments.
-3. As soon as it gets into Github, it will automatically deploy your code on your nodes.
-4. Then you access your experiments' run UI through Github, which will launch experiments and save the checkpoints.
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Development server |
+| `npm run build` | Production build |
+| `npm run lint` | ESLint + `tsc --noEmit`, zero warnings tolerated |
+| `npm test` | Unit, database-invariant and secret-leak tests (60) |
+| `npm run e2e` | Playwright funnel + cast flow on a phone viewport, `HF_MOCK=1` (17) |
+| `npm run smoke:live` | **Spends real money.** One real image and one real video |
 
-## Design
+## Architecture
 
-We follow the standard pytorch workflow. Thus you can incorporate anything besides what we provide, `deepspeed`, `accelerate`, or just implement your custom `pytorch` sharding from scratch.
+```
+src/lib/          models.ts (catalogue)  higgsfield.ts (API client)
+                  jobs.ts (pipeline)     phash.ts (duplicate detection)
+                  db.ts (RPC layer)      session.ts  pricing.ts  moderation.ts
+src/app/api/      generate  jobs/[id]  upload  rewrite  ledger  payout
+                  checkout  stripe/webhook  reconcile  stats  media/[key]
+supabase/         migrations — schema, and every money invariant
+tests/            unit + database + secret-leak
+e2e/              the full funnel
+reference/        the vendored higgsfield-ai/higgsfield training framework
+```
 
-**Enviroment hell**
+### Security
 
-No more different versions of pytorch, nvidia drivers, data processing libraries.
-You can easily orchestrate experiments and their environments, document and track the specific versions and configurations of all dependencies to ensure reproducibility.
+The app holds **no Supabase service-role key**. Tables are RLS-locked with no
+policies, so the publishable key reads nothing; all access goes through
+`SECURITY DEFINER` functions requiring a server-only shared secret. Provider
+credentials never leave the server — `tests/secret-leak.test.ts` greps the real
+built client bundle for secret names, live values and key-shaped patterns.
 
-**Config hell**
+## Status
 
-No need to define [600 arguments for your experiment](https://github.com/huggingface/transformers/blob/aaccf1844eccbb90cc923378e3c37a6b143d03fb/src/transformers/training_args.py#L161). No more [yaml witchcraft](https://hydra.cc/).
-You can use whatever you want, whenever you want. We just introduce a simple interface to define your experiments. We have even taken it further, now you only need to design the way to interact.
+Everything above is built, deployed and tested. Two things gate real
+generations, both listed in [`TODO.md`](TODO.md):
 
-## Compatibility
+1. **The Higgsfield account has no API credits.** The key authenticates
+   correctly, but every generation endpoint returns `403 not_enough_credits`.
+   API credits are bought at `console.higgsfield.ai` and are separate from a
+   higgsfield.ai consumer subscription.
+2. **Credit prices are not yet calibrated** against real provider billing.
 
-**We need you to have nodes with:**
+Until credits are loaded the app runs in `HF_MOCK=1`. Loading credits and
+removing that variable switches the same code path to live with no edits.
 
-- Ubuntu
-- SSH access
-- Non-root user with sudo privileges (no-password is required)
+## Licence
 
-**Clouds we have tested on:**
-
-- Azure
-- LambdaLabs
-- FluidStack
-
-Feel free to open an issue if you have any problems with other clouds.
-
-## Getting started
-
-#### [Setup](./setup.md)
-
-Here you can find the quick start guide on how to setup your nodes and start training.
-
-- [Initialize the project](https://github.com/higgsfield/higgsfield/blob/main/setup.md#initialize-the-project)
-- [Setup the environment](https://github.com/higgsfield/higgsfield/blob/main/setup.md#setup-the-environment)
-- [Setup git](https://github.com/higgsfield/higgsfield/blob/main/setup.md#setup-git)
-- [Time to setup your nodes!](https://github.com/higgsfield/higgsfield/blob/main/setup.md#time-to-setup-your-nodes)
-- [Run your very first experiment](https://github.com/higgsfield/higgsfield/blob/main/setup.md#run-your-very-first-experiment)
-- [Fasten your seatbelt, it's time to deploy!](https://github.com/higgsfield/higgsfield/blob/main/setup.md#fasten-your-seatbelt-its-time-to-deploy)
-
-#### [Tutorial](./tutorial.md)
-
-API for common tasks in Large Language Models training.
-
-- [Working with distributed model](https://github.com/higgsfield/higgsfield/blob/main/tutorial.md#working-with-distributed-model)
-- [Preparing Data](https://github.com/higgsfield/higgsfield/blob/main/tutorial.md#preparing-data)
-- [Optimizing the Model Parameters](https://github.com/higgsfield/higgsfield/blob/main/tutorial.md#optimizing-the-model-parameters)
-- [Saving Model](https://github.com/higgsfield/higgsfield/blob/main/tutorial.md#saving-model)
-- [Training stabilization techniques](https://github.com/higgsfield/higgsfield/blob/main/tutorial.md#training-stabilization-techniques)
-- [Monitoring](https://github.com/higgsfield/higgsfield/blob/main/tutorial.md#monitoring)
-
-| Platform                                                          | Purpose                                                           | Estimated Response Time | Support Level   |
-| ----------------------------------------------------------------- | ----------------------------------------------------------------- | ----------------------- | --------------- |
-| [Github Issues](https://github.com/higgsfield/higgsfield/issues/) | Bug reports, feature requests, install issues, usage issues, etc. | < 1 day                 | Higgsfield Team |
-| [Twitter](https://twitter.com/higgsfield_ai/)                     | For staying up-to-date on new features.                           | Daily                   | Higgsfield Team |
-| [Website](https://higgsfield.ai/)                                 | Discussion, news.                                                 | < 2 days                | Higgsfield Team |
-
+The vendored `reference/higgsfield-oss/` retains its original licence and
+notices. It is a PyTorch distributed-training framework that shares the
+Higgsfield name and is unrelated to the video API this app uses.

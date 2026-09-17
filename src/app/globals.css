@@ -1,0 +1,231 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+   JellyVid design system.
+
+   The discipline that makes a studio site look expensive is restraint with the
+   accent. The page is black, white type and imagery; neon pink touches a few
+   percent of the pixels — a live dot, one button, one rule. Glow is used on
+   exactly one element per screen, never as a default.
+
+   Baby blue is the informational accent (status, meta), yellow is the warning
+   and "free" accent. Neither competes with pink for primary actions.
+--------------------------------------------------------------------------- */
+@theme {
+  --color-ink: #000000;
+  --color-surface: #0a0a0c;
+  --color-raised: #141418;
+  --color-line: #232329;
+  --color-line-soft: #18181d;
+
+  --color-pink: #ff2bd6;
+  --color-pink-soft: #ff7ce6;
+  --color-blue: #6fe9ff;
+  --color-yellow: #eaff4a;
+
+  --color-text: #ffffff;
+  --color-muted: #9b9ba6;
+  --color-faint: #6a6a75;
+
+  --radius-card: 14px;
+}
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    background: var(--color-ink);
+    color-scheme: dark;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-ink);
+    color: var(--color-text);
+    min-height: 100dvh;
+    overflow-x: hidden;
+    /* Room for the mobile tab bar, plus the home indicator. */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  h1, h2, h3 {
+    letter-spacing: -0.03em;
+    line-height: 0.95;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-blue);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: var(--color-pink);
+    color: #fff;
+  }
+}
+
+@layer components {
+  /* The section eyebrow: the one place the accent appears as text. */
+  .jv-eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--color-faint);
+  }
+
+  .jv-display {
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    line-height: 0.92;
+  }
+
+  /* Media tiles carry the page. They are borderless — the image is the edge. */
+  .jv-tile {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-card);
+    background: var(--color-raised);
+    isolation: isolate;
+  }
+
+  .jv-tile-label {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    padding: 2rem 0.75rem 0.75rem;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.35) 55%, transparent);
+    pointer-events: none;
+  }
+
+  /* Surfaces, used sparingly. A hairline, not a glowing box. */
+  .jv-panel {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line-soft);
+    border-radius: var(--radius-card);
+  }
+
+  .jv-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 50px;
+    padding: 0.8rem 1.4rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.9375rem;
+    letter-spacing: -0.01em;
+    line-height: 1;
+    transition: transform 0.12s ease, background 0.18s ease, opacity 0.18s ease;
+    cursor: pointer;
+  }
+
+  .jv-btn:active:not(:disabled) {
+    transform: scale(0.985);
+  }
+
+  .jv-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  /* The single glowing element per screen. */
+  .jv-btn-primary {
+    background: var(--color-pink);
+    color: #fff;
+    box-shadow: 0 8px 34px -12px rgba(255, 43, 214, 0.9);
+  }
+
+  .jv-btn-primary:hover:not(:disabled) {
+    background: var(--color-pink-soft);
+  }
+
+  .jv-btn-ghost {
+    background: transparent;
+    border: 1px solid var(--color-line);
+    color: var(--color-text);
+  }
+
+  .jv-btn-ghost:hover:not(:disabled) {
+    border-color: #3a3a44;
+  }
+
+  .jv-btn-light {
+    background: #fff;
+    color: #000;
+  }
+
+  .jv-input {
+    width: 100%;
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: 12px;
+    padding: 0.875rem 1rem;
+    color: var(--color-text);
+    /* 16px keeps iOS Safari from zooming the viewport on focus. */
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  .jv-input::placeholder {
+    color: var(--color-faint);
+  }
+
+  .jv-input:focus {
+    border-color: #3a3a44;
+    outline: none;
+  }
+
+  .jv-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.28rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* Hairline rule, used instead of card borders to separate bands. */
+  .jv-hr {
+    height: 1px;
+    background: var(--color-line-soft);
+  }
+}
+
+@keyframes jv-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.jv-pulse { animation: jv-pulse 1.4s ease-in-out infinite; }
+
+/* Hide scrollbars on the horizontal rails without losing the scroll. */
+.jv-rail {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.jv-rail::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
