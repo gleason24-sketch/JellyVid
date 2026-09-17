@@ -18,6 +18,17 @@ passed in this repo.
 
 Every row has a test named after it in `tests/complaint-fixes.test.ts`.
 
+## The hook
+
+- [x] Seedance 2.5 / 2.0 reference-to-video wired — real face inputs, verified
+      reachable on this account
+- [x] Cast flow: upload 1–3 photos, consent gate, generate
+- [x] Eight one-tap scene presets, so no prompt has to be written
+- [x] Draft→final carries the same reference set forward
+- [x] Public gallery at `/gallery`, surfaced on the landing page
+- [ ] Soul character / Soul reference (image-side face models) not wired yet
+- [ ] Seedance 2.5 video-edit and video-extend not wired yet
+
 ## Build
 
 - [x] Higgsfield docs read; endpoints verified against the live account (`docs/HIGGSFIELD_NOTES.md`)
@@ -36,8 +47,9 @@ Every row has a test named after it in `tests/complaint-fixes.test.ts`.
 
 - [x] `npm run build` — passes
 - [x] `npm run lint` — passes (ESLint + `tsc --noEmit`, zero warnings)
-- [x] `npm test` — 55 passing (unit, database invariants, secret-leak)
-- [x] `npm run e2e` — 13 passing on a phone viewport under `HF_MOCK=1`
+- [x] `npm test` — 60 passing (unit, database invariants, secret-leak)
+- [x] `npm run e2e` — 17 passing on a phone viewport under `HF_MOCK=1`,
+      including the full cast flow with a real photo upload
 - [x] Secret-leak test greps the real built client bundle
 - [x] `/stats` renders live counts from the database
 - [ ] `npm run smoke:live` — **blocked**: the API key authenticates but the

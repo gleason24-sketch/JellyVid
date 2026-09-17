@@ -170,3 +170,53 @@ links and the CTA, and overflowed by 42px. Pricing is hidden under 380px — it
 stays one tap away in the footer, the wallet and the studio's Top up button.
 Horizontal overflow is now 0px across iPhone SE, iPhone 13, Pixel 7 and iPad
 Mini on all six pages.
+
+## The pivot: faces first
+
+### The product is now "put yourself in the movie"
+
+The competition this is built for is judged on one thing: whether people
+actually use it. That reframes the whole build.
+
+The Higgsfield API has one capability its competitors do not — **Seedance 2.5
+reference-to-video with real face inputs, available in the US**. That is the
+most personal, most shareable thing the platform can do, and it is the only
+thing here that cannot be rebuilt on another provider. So it became the hero:
+upload a selfie, tap a scene, star in it.
+
+The honest-money layer did not go away — it is still enforced in SQL and still
+the reason to trust us with a card later. It is now the second thing you learn
+about the product rather than the first.
+
+### We do not compete with the open-source studio on model count
+
+`wide-trace/open-higgsfield` is the reference implementation: 32 models behind
+one prompt bar, per-model setting allow-lists, bring your own key. It is very
+good at what it is — a power tool for someone who already has an API key.
+
+Matching it model-for-model would be losing on their terms. The gap it leaves is
+the person who has no key, has never written a prompt, and wants a video of
+themselves. That person cannot use it at all. So JellyVid is hosted, needs no
+key, grants free credits on first tap, and chooses the model for you.
+
+### Scene presets, because "write a prompt" is the real drop-off
+
+Eight curated scenes, each a full cinematic direction — camera move, lighting,
+lens, grade — with a `{subject}` slot filled differently per task. One tap
+produces an 80+ character directed shot. The textarea stays editable for anyone
+who wants it. This is the difference between a tool and a thing your mother can
+use.
+
+### A public gallery, because proof of use is the judging criterion
+
+Every shared output appears at `/gallery` and on the landing page. It is social
+proof, it is the share loop's landing surface, and it is indexable. `jv_gallery`
+is public and secret-free like `jv_share_get` and `jv_stats`, and returns only
+what the maker explicitly published — never an identity.
+
+### Five task cards, not four
+
+The original brief said exactly four. The cast flow earned a fifth, featured
+above the others. Five short cards with the model still chosen for you is not
+the carnival complaint #6 is about; the test now asserts a ceiling of five and
+that the hero is first, rather than an exact list of four.

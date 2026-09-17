@@ -7,11 +7,11 @@ import './globals.css';
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://jellyvid.com'),
   title: {
-    default: 'JellyVid — AI video that does not play games with your money',
+    default: 'JellyVid — put yourself in the movie',
     template: '%s · JellyVid',
   },
   description:
-    'Credits that never expire. Refunds you do not have to ask for. Prices you see before you click. AI video and image generation, built to be honest.',
+    'Upload one selfie, pick a scene, get a cinematic video of you in it. 200 free credits, no signup. Credits never expire and failed generations refund themselves.',
   applicationName: 'JellyVid',
   icons: {
     icon: [
@@ -24,15 +24,15 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     siteName: 'JellyVid',
-    title: 'JellyVid — AI video that does not play games with your money',
+    title: 'JellyVid — put yourself in the movie',
     description:
-      'Credits that never expire. Refunds you do not have to ask for. Prices you see before you click.',
+      'Upload one selfie, pick a scene, get a cinematic video of you in it. 200 free credits, no signup.',
     images: ['/icon-512.png'],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'JellyVid',
-    description: 'Credits that never expire. Refunds you do not have to ask for.',
+    title: 'JellyVid — put yourself in the movie',
+    description: 'Upload one selfie, pick a scene, star in it. 200 free credits, no signup.',
     images: ['/icon-512.png'],
   },
 };
@@ -75,10 +75,10 @@ function Nav() {
             Pricing
           </Link>
           <Link
-            href="/stats"
+            href="/gallery"
             className="hidden rounded-full px-3 py-2 text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)] sm:block"
           >
-            Stats
+            Gallery
           </Link>
           <Link
             href="/wallet"
@@ -117,6 +117,7 @@ function Footer() {
         <nav aria-label="Footer" className="flex flex-wrap gap-x-4">
           {[
             ['/studio', 'Studio'],
+            ['/gallery', 'Gallery'],
             ['/pricing', 'Pricing'],
             ['/wallet', 'Wallet'],
             ['/stats', 'Stats'],

@@ -143,10 +143,15 @@ proves the model is not available to this account.
 | ---------------------------------------- | ----- | --------------------------- |
 | `/bytedance/seedance-2.0/text-to-video`   | 403   | `seedance-2-draft` (40 cr)  |
 | `/bytedance/seedance-2.5/text-to-video`   | 403   | `seedance-25-final` (120 cr)|
+| `/bytedance/seedance-2.5/reference-to-video` | 403 | `seedance-25-ref-final` — **face inputs** |
+| `/bytedance/seedance-2.0/reference-to-video` | 403 | `seedance-2-ref-draft` — **face inputs**  |
 | `/bytedance/seedance-2.0/image-to-video`  | 403   | `seedance-2-i2v-draft`      |
 | `/bytedance/seedance-2.5/image-to-video`  | 403   | `seedance-25-i2v-final`     |
 | `/kling-video/v3.0/std/text-to-video`     | 403   | `kling-3-final`             |
 | `/alibaba/wan-3.0/text-to-video`          | 403   | `wan-3-final`               |
+| `/bytedance/seedance-2.5/video-edit`       | 403   | not wired yet               |
+| `/higgsfield-ai/soul/character`           | 403   | not wired yet (image, face) |
+| `/higgsfield-ai/soul/reference`           | 403   | not wired yet (image, face) |
 | `/kling-video/v3.0/std/image-to-video`    | 403   | not wired yet               |
 | `/alibaba/wan-3.0/image-to-video`         | 403   | not wired yet               |
 
@@ -176,6 +181,15 @@ Read from each model's own workflow page.
 `resolution` (`480p` | `720p`), `duration` 4–30, `aspect_ratio`
 (`16:9|4:3|1:1|3:4|9:16|21:9`), `generate_audio`, `output_format` (`mp4`|`mov`).
 No media inputs; automatic duration (`-1`) unsupported.
+
+**`bytedance/seedance-2.5/reference-to-video`** — this is the face-input path,
+and the reason the product exists in this shape. `image_urls` accepts 1–30
+public reference image URLs (`video_urls` and `audio_urls` also exist, 1–10
+each); at least one reference of some kind is required. Also `prompt`,
+`resolution` (`480p`|`720p`), `duration` 4–30, `generate_audio`,
+`output_format`, and — the docs are explicit about this — an **explicit
+`aspect_ratio`**. It does not take `image_url`; sending one is a 422.
+`asset://` references are not accepted.
 
 **`bytedance/seedance-2.5/image-to-video`** — `image_url` (required, public
 URL), optional `end_image_url`, `prompt`, `resolution`, `duration` 4–30,

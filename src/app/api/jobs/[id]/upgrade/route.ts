@@ -33,6 +33,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       aspectRatio?: string;
       durationSeconds?: number;
       withAudio?: boolean;
+      imageUrls?: string[];
     };
 
     const result = await createJob({
@@ -44,6 +45,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       durationSeconds: params.durationSeconds,
       withAudio: params.withAudio,
       imageUrl: draft.input_url ?? undefined,
+      // The final has to be cast from the same faces as the draft.
+      imageUrls: params.imageUrls,
       modelOverride: body.modelOverride,
       // Consent carries forward from the draft that already collected it.
       consent: draft.consent_at !== null,

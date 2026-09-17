@@ -1,15 +1,19 @@
 # JellyVid
 
-**AI video that doesn't play games with your money.**
+**Put yourself in the movie.**
 
-Credits that never expire. Refunds you don't have to ask for. Prices you see
-before you click.
+Upload one selfie. Tap a scene. Get a cinematic video of you in it, in about a
+minute. No app, no signup, no API key.
 
-JellyVid is an image and video studio built on the Higgsfield API. Its entire
-feature set is a list of documented complaints about AI generation studios, each
-one turned into a guarantee that is enforced in code rather than promised in
-copy. See [`CLAUDE.md`](CLAUDE.md) for the complaint → fix map and
-[`DECISIONS.md`](DECISIONS.md) for why it is built this way.
+JellyVid is built on the Higgsfield API, around the one capability it has that
+other providers do not: **Seedance 2.5 reference-to-video with real face
+inputs, available in the US**. Eight curated scenes mean you never have to write
+a prompt.
+
+Underneath it is a studio that refuses to play games with your money — credits
+that never expire, refunds you don't have to ask for, and the price on the
+button before you press it. See [`CLAUDE.md`](CLAUDE.md) for the complaint → fix
+map and [`DECISIONS.md`](DECISIONS.md) for why it is built this way.
 
 ## The governing rule
 
@@ -47,8 +51,8 @@ HF_MOCK=1 npm run dev
 | `npm run dev` | Development server |
 | `npm run build` | Production build |
 | `npm run lint` | ESLint + `tsc --noEmit`, zero warnings tolerated |
-| `npm test` | Unit, database-invariant and secret-leak tests |
-| `npm run e2e` | Playwright funnel on a phone viewport, `HF_MOCK=1` |
+| `npm test` | Unit, database-invariant and secret-leak tests (60) |
+| `npm run e2e` | Playwright funnel + cast flow on a phone viewport, `HF_MOCK=1` (17) |
 | `npm run smoke:live` | **Spends real money.** One real image and one real video |
 
 ## Architecture

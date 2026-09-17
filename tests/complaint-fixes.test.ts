@@ -5,7 +5,14 @@
  */
 import { describe, expect, it } from 'vitest';
 import { CREDIT_PACKS, CENTS_PER_CREDIT, everyPackIsTheSameRate, creditsToUsd } from '@/lib/pricing';
-import { MODELS, TASKS, TASK_LIST, modelForTask, upgradeSavings } from '@/lib/models';
+import {
+  MODELS,
+  TASKS,
+  TASK_LIST,
+  modelForTask,
+  resolvePreset,
+  upgradeSavings,
+} from '@/lib/models';
 import { hammingDistance, isNearDuplicate, perceptualHashFromBitmap, DUPLICATE_DISTANCE } from '@/lib/phash';
 import { renderMockPng } from '@/lib/mock-image';
 import { perceptualHash } from '@/lib/phash';
@@ -158,14 +165,29 @@ describe('complaint 5: false or opaque NSFW blocks', () => {
 });
 
 describe('complaint 6: convoluted, carnival UI', () => {
-  it('offers exactly four task cards', () => {
-    expect(TASK_LIST).toHaveLength(4);
+  it('keeps the task list short and fixed, with the hero first', () => {
+    // A short fixed list, not a model grid. Five is the ceiling we hold to.
+    expect(TASK_LIST.length).toBeLessThanOrEqual(5);
+    expect(TASK_LIST[0].id).toBe('star_in_it');
     expect(TASK_LIST.map((task) => task.id)).toEqual([
+      'star_in_it',
       'product_ad',
       'talking_character',
       'cinematic_shot',
       'animate_photo',
     ]);
+  });
+
+  it('lets someone generate without writing a prompt at all', () => {
+    // Presets are the no-prompt path: pick a look, get a directed shot.
+    const star = TASKS.star_in_it;
+    expect(star.presets.length).toBeGreaterThanOrEqual(6);
+    for (const preset of star.presets) {
+      const resolved = resolvePreset(preset, 'star_in_it');
+      expect(resolved).not.toContain('{subject}');
+      expect(resolved).toContain('the person in the reference images');
+      expect(resolved.length).toBeGreaterThan(80);
+    }
   });
 
   it('picks the model for you, so no choice is required to start', () => {
@@ -198,9 +220,11 @@ describe('complaint 7: low keeper rate burns money', () => {
   });
 
   it('refuses a model that cannot feed the chosen task', () => {
-    // animate_photo needs an image; a text-to-video model cannot serve it.
+    // animate_photo needs a start image; a text-to-video model cannot serve it.
     expect(() => modelForTask('animate_photo', 'final', 'seedance-25-final')).toThrow();
     expect(() => modelForTask('cinematic_shot', 'final', 'seedance-25-i2v-final')).toThrow();
+    // A cast job needs reference inputs, which a plain t2v model does not take.
+    expect(() => modelForTask('star_in_it', 'final', 'seedance-25-final')).toThrow();
   });
 });
 
@@ -278,5 +302,58 @@ describe('mock harness', () => {
     expect(readForcedOutcome('a cat [[force:fail]]')).toBe('fail');
     expect(readForcedOutcome('a cat [[force:nsfw]]')).toBe('nsfw');
     expect(readForcedOutcome('a cat')).toBe('ok');
+  });
+});
+
+describe('face inputs — the capability this is built around', () => {
+  it('routes the cast task to Seedance reference-to-video on both tiers', () => {
+    expect(MODELS[TASKS.star_in_it.draftModel].endpoint).toBe(
+      '/bytedance/seedance-2.0/reference-to-video',
+    );
+    expect(MODELS[TASKS.star_in_it.finalModel].endpoint).toBe(
+      '/bytedance/seedance-2.5/reference-to-video',
+    );
+  });
+
+  it('sends references as image_urls, with the explicit aspect ratio the docs require', () => {
+    const model = MODELS['seedance-25-ref-final'];
+    const body = model.buildBody({
+      prompt: 'walking through neon rain',
+      aspectRatio: '9:16',
+      imageUrls: ['https://cdn.example/a.jpg', 'https://cdn.example/b.jpg'],
+      durationSeconds: 5,
+      withAudio: true,
+    });
+    expect(body.image_urls).toEqual(['https://cdn.example/a.jpg', 'https://cdn.example/b.jpg']);
+    expect(body.aspect_ratio).toBe('9:16');
+    expect(body.resolution).toBe('720p');
+    // Reference-to-video takes no single image_url; sending one is a 422.
+    expect(body.image_url).toBeUndefined();
+  });
+
+  it('clamps duration into the range each model documents', () => {
+    const final = MODELS['seedance-25-ref-final'].buildBody({
+      prompt: 'x',
+      aspectRatio: '9:16',
+      imageUrls: ['https://cdn.example/a.jpg'],
+      durationSeconds: 999,
+      withAudio: true,
+    });
+    expect(final.duration).toBe(30); // 2.5 allows 4-30
+
+    const draft = MODELS['seedance-2-ref-draft'].buildBody({
+      prompt: 'x',
+      aspectRatio: '9:16',
+      imageUrls: ['https://cdn.example/a.jpg'],
+      durationSeconds: 999,
+      withAudio: true,
+    });
+    expect(draft.duration).toBe(15); // 2.0 allows 4-15
+  });
+
+  it('treats every face task as a likeness, so consent is always demanded', () => {
+    for (const task of TASK_LIST) {
+      if (task.input !== 'none') expect(task.likenessRisk).toBe(true);
+    }
   });
 });

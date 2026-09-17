@@ -11,6 +11,14 @@ export function TaskIcon({ name, className = '' }: { name: string; className?: s
     'aria-hidden': true,
   };
   switch (name) {
+    case 'star':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="8.5" r="3.5" />
+          <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
+          <path d="m19 3 .8 1.9L21.7 5.7l-1.9.8L19 8.4l-.8-1.9-1.9-.8 1.9-.8Z" />
+        </svg>
+      );
     case 'product':
       return (
         <svg {...common}>

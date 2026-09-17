@@ -2,7 +2,15 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { TASK_LIST, TASKS, MODELS, type TaskId, type Tier } from '@/lib/models';
+import {
+  MODELS,
+  TASKS,
+  TASK_LIST,
+  resolvePreset,
+  type ScenePreset,
+  type TaskId,
+  type Tier,
+} from '@/lib/models';
 import { creditsToUsd } from '@/lib/pricing';
 import { Badge, BalanceDisplay } from './ui';
 import { TaskIcon } from './icons';
@@ -31,19 +39,19 @@ interface Job {
     | 'duplicate';
   output_url: string | null;
   error_reason: string | null;
-  error_code: string | null;
   refunded: boolean;
-  refund_reason: string | null;
-  parent_job_id: string | null;
   share_slug: string | null;
   created_at: string;
 }
 
 const ASPECTS = ['9:16', '16:9', '1:1', '4:3'];
 const TERMINAL = ['completed', 'failed', 'nsfw', 'canceled', 'timeout', 'duplicate'];
+const MAX_REFERENCES = 3;
 
-/** Copy for every state a job can be in. No state is left as a bare spinner. */
-const STATUS_COPY: Record<Job['status'], { label: string; tone: 'pink' | 'blue' | 'yellow' | 'muted' | 'good' }> = {
+const STATUS_COPY: Record<
+  Job['status'],
+  { label: string; tone: 'pink' | 'blue' | 'yellow' | 'muted' | 'good' }
+> = {
   queued: { label: 'Queued', tone: 'muted' },
   in_progress: { label: 'Generating', tone: 'blue' },
   completed: { label: 'Done', tone: 'good' },
@@ -58,10 +66,17 @@ function isVideoUrl(url: string | null): boolean {
   return Boolean(url && /\.(mp4|mov|webm)(\?|$)/i.test(url));
 }
 
-export default function Studio({ initialWallet }: { initialWallet: Wallet | null }) {
+export default function Studio({
+  initialWallet,
+  initialTask,
+}: {
+  initialWallet: Wallet | null;
+  initialTask?: TaskId;
+}) {
   const [wallet, setWallet] = useState<Wallet | null>(initialWallet);
-  const [task, setTask] = useState<TaskId | null>(null);
+  const [task, setTask] = useState<TaskId | null>(initialTask ?? 'star_in_it');
   const [prompt, setPrompt] = useState('');
+  const [presetId, setPresetId] = useState<string | null>(null);
   const [tier, setTier] = useState<Tier>('draft');
   const [aspect, setAspect] = useState('9:16');
   const [duration, setDuration] = useState(5);
@@ -69,6 +84,7 @@ export default function Studio({ initialWallet }: { initialWallet: Wallet | null
   const [modelOverride, setModelOverride] = useState('');
   const [consent, setConsent] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
+  const [references, setReferences] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [advanced, setAdvanced] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -84,6 +100,9 @@ export default function Studio({ initialWallet }: { initialWallet: Wallet | null
     : null;
   const cost = activeModel?.credits ?? 0;
   const affordable = !wallet || wallet.balance_credits >= cost;
+  const needsFaces = spec?.input === 'references';
+  const needsPhoto = spec?.input === 'start-image';
+  const inputsReady = needsFaces ? references.length > 0 : needsPhoto ? Boolean(imageUrl) : true;
 
   const loadJobs = useCallback(async () => {
     const response = await fetch('/api/jobs', { cache: 'no-store' });
@@ -97,8 +116,8 @@ export default function Studio({ initialWallet }: { initialWallet: Wallet | null
     void loadJobs();
   }, [loadJobs]);
 
-  // Poll only while something is actually running, and stop the moment the last
-  // job settles -- a live status for every job, and no idle polling.
+  // Poll only while something is running, and stop the moment the last job
+  // settles -- a live status for every job, and no idle polling.
   useEffect(() => {
     const pending = jobs.filter((job) => !TERMINAL.includes(job.status));
     if (pending.length === 0) return;
@@ -114,7 +133,7 @@ export default function Studio({ initialWallet }: { initialWallet: Wallet | null
           setJobs((current) => current.map((item) => (item.id === data.job.id ? data.job : item)));
           if (data.wallet) setWallet(data.wallet);
         } catch {
-          /* keep polling; a dropped request is not a failure */
+          /* a dropped poll is not a failure; keep going */
         }
       }
     }, 2500);
@@ -132,23 +151,36 @@ export default function Studio({ initialWallet }: { initialWallet: Wallet | null
     setDuration(next.defaultDuration);
     setWithAudio(next.defaultAudio);
     setModelOverride('');
-    setConsent(false);
-    setImageUrl('');
+    setPresetId(null);
+    setPrompt('');
     setError(null);
     setRewriteNotes(null);
-    requestAnimationFrame(() => promptRef.current?.focus());
   }
 
-  async function upload(file: File) {
+  function choosePreset(preset: ScenePreset) {
+    if (!task) return;
+    setPresetId(preset.id);
+    setPrompt(resolvePreset(preset, task));
+    setAspect(preset.aspect);
+    setDuration(preset.duration);
+    setWithAudio(preset.audio);
+    setError(null);
+  }
+
+  async function uploadFiles(files: FileList) {
     setUploading(true);
     setError(null);
     try {
-      const form = new FormData();
-      form.append('file', file);
-      const response = await fetch('/api/upload', { method: 'POST', body: form });
-      const data = (await response.json()) as { url?: string; error?: string };
-      if (!response.ok || !data.url) throw new Error(data.error ?? 'Upload failed.');
-      setImageUrl(data.url);
+      const room = needsFaces ? MAX_REFERENCES - references.length : 1;
+      for (const file of Array.from(files).slice(0, Math.max(room, 0))) {
+        const form = new FormData();
+        form.append('file', file);
+        const response = await fetch('/api/upload', { method: 'POST', body: form });
+        const data = (await response.json()) as { url?: string; error?: string };
+        if (!response.ok || !data.url) throw new Error(data.error ?? 'Upload failed.');
+        if (needsFaces) setReferences((current) => [...current, data.url as string]);
+        else setImageUrl(data.url);
+      }
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : 'Upload failed.');
     } finally {
@@ -173,6 +205,7 @@ export default function Studio({ initialWallet }: { initialWallet: Wallet | null
           durationSeconds: duration,
           withAudio,
           imageUrl: imageUrl || undefined,
+          imageUrls: references.length > 0 ? references : undefined,
           modelOverride: modelOverride || undefined,
           consent,
           // Sent so the server can refuse if the price moved under us.
@@ -189,6 +222,7 @@ export default function Studio({ initialWallet }: { initialWallet: Wallet | null
       setJobs((current) => [data.job as Job, ...current]);
       if (data.wallet) setWallet(data.wallet);
       if (data.recoveryCode) setRecoveryCode(data.recoveryCode);
+      document.getElementById('results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (generateError) {
       setError(generateError instanceof Error ? generateError.message : 'Could not start.');
     } finally {
@@ -244,15 +278,15 @@ export default function Studio({ initialWallet }: { initialWallet: Wallet | null
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 pb-24 pt-6">
-      <div className="jv-card mb-6 flex items-center justify-between gap-4 p-4">
+    <div className="mx-auto w-full max-w-3xl px-4 pb-24 pt-5">
+      <div className="jv-card mb-5 flex items-center justify-between gap-4 p-4">
         {wallet ? (
           <BalanceDisplay credits={wallet.balance_credits} size="sm" />
         ) : (
           <div>
             <div className="text-xl font-extrabold jv-glow-pink">200 free credits</div>
             <div className="mt-1 text-xs font-semibold text-[var(--color-blue)]">
-              Granted the moment you generate. No signup.
+              Yours the moment you generate. No signup.
             </div>
           </div>
         )}
@@ -262,10 +296,10 @@ export default function Studio({ initialWallet }: { initialWallet: Wallet | null
       </div>
 
       {recoveryCode ? (
-        <div className="jv-card mb-6 border-[var(--color-yellow)] p-4">
+        <div className="jv-card mb-5 border-[var(--color-yellow)] p-4">
           <p className="text-sm font-bold text-[var(--color-yellow)]">Save your recovery code</p>
           <p className="mt-1 text-sm text-[var(--color-muted)]">
-            This is the only way to move this wallet to another device. We will not email it to you.
+            This is the only way to open this wallet on another device. We will not email it.
           </p>
           <code className="mt-3 block rounded-lg bg-black/50 px-3 py-2 font-mono text-lg tracking-widest">
             {recoveryCode}
@@ -274,11 +308,11 @@ export default function Studio({ initialWallet }: { initialWallet: Wallet | null
       ) : null}
 
       <h1 className="mb-1 text-2xl font-extrabold sm:text-3xl">What are you making?</h1>
-      <p className="mb-5 text-sm text-[var(--color-muted)]">
-        Pick one. The model is chosen for you — change it under Advanced if you want.
+      <p className="mb-4 text-sm text-[var(--color-muted)]">
+        Pick one. We choose the model for you.
       </p>
 
-      <div className="mb-8 grid grid-cols-2 gap-3">
+      <div className="mb-7 grid grid-cols-2 gap-2.5">
         {TASK_LIST.map((item) => {
           const selected = task === item.id;
           return (
@@ -287,12 +321,19 @@ export default function Studio({ initialWallet }: { initialWallet: Wallet | null
               type="button"
               onClick={() => chooseTask(item.id)}
               aria-pressed={selected}
-              className={`jv-card flex min-h-[124px] flex-col items-start gap-2 p-4 text-left transition-all ${
+              className={`jv-card relative flex min-h-[112px] flex-col items-start gap-1.5 p-4 text-left transition-all ${
+                item.featured ? 'col-span-2' : ''
+              } ${
                 selected
                   ? 'border-[var(--color-pink)] shadow-[0_0_0_1px_var(--color-pink),0_14px_40px_-20px_rgba(255,43,214,0.9)]'
                   : 'hover:border-[var(--color-pink-soft)]'
               }`}
             >
+              {item.featured ? (
+                <span className="absolute right-3 top-3 rounded-full bg-[var(--color-yellow)] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-black">
+                  New
+                </span>
+              ) : null}
               <TaskIcon
                 name={item.icon}
                 className={`h-6 w-6 ${selected ? 'text-[var(--color-pink)]' : 'text-[var(--color-blue)]'}`}
@@ -306,14 +347,128 @@ export default function Studio({ initialWallet }: { initialWallet: Wallet | null
 
       {spec ? (
         <div className="jv-card mb-8 p-4 sm:p-5">
+          {/* ---------------------------------------------- face references --- */}
+          {needsFaces ? (
+            <div className="mb-5">
+              <label className="mb-1.5 block text-sm font-bold">
+                Your face{' '}
+                <span className="font-normal text-[var(--color-muted)]">
+                  — 1 to {MAX_REFERENCES} photos, clear and well lit
+                </span>
+              </label>
+
+              <div className="flex flex-wrap gap-2.5">
+                {references.map((url, index) => (
+                  <div key={url} className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={url}
+                      alt={`Reference ${index + 1}`}
+                      className="h-20 w-20 rounded-xl border border-[var(--color-line)] object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setReferences((c) => c.filter((item) => item !== url))}
+                      aria-label={`Remove reference ${index + 1}`}
+                      className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black text-sm font-bold text-white ring-1 ring-[var(--color-line)]"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+
+                {references.length < MAX_REFERENCES ? (
+                  <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-[var(--color-line)] text-center text-[var(--color-muted)] transition-colors hover:border-[var(--color-pink)] hover:text-[var(--color-pink)]">
+                    <span className="text-2xl leading-none">+</span>
+                    <span className="text-[10px] font-semibold">Add photo</span>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      multiple
+                      className="sr-only"
+                      onChange={(event) => {
+                        if (event.target.files?.length) void uploadFiles(event.target.files);
+                        event.target.value = '';
+                      }}
+                    />
+                  </label>
+                ) : null}
+              </div>
+
+              {uploading ? (
+                <p className="mt-2 text-xs text-[var(--color-blue)] jv-pulse">Uploading…</p>
+              ) : null}
+              <p className="mt-2 text-xs text-[var(--color-faint)]">
+                Photos go straight to the model provider and are never shown to anyone else.
+              </p>
+            </div>
+          ) : null}
+
+          {/* ------------------------------------------------ single photo --- */}
+          {needsPhoto ? (
+            <div className="mb-5">
+              <label htmlFor="photo" className="mb-1.5 block text-sm font-bold">
+                Your photo
+              </label>
+              <input
+                id="photo"
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                onChange={(event) => {
+                  if (event.target.files?.length) void uploadFiles(event.target.files);
+                }}
+                className="jv-input file:mr-3 file:rounded-full file:border-0 file:bg-[var(--color-pink)] file:px-3 file:py-1.5 file:text-sm file:font-bold file:text-white"
+              />
+              {uploading ? (
+                <p className="mt-2 text-xs text-[var(--color-blue)] jv-pulse">Uploading…</p>
+              ) : null}
+              {imageUrl ? <p className="mt-2 text-xs text-[#8dffc4]">Photo ready.</p> : null}
+            </div>
+          ) : null}
+
+          {/* ----------------------------------------------------- scenes --- */}
+          {spec.presets.length > 0 ? (
+            <div className="mb-5">
+              <span className="mb-2 block text-sm font-bold">
+                Pick a scene{' '}
+                <span className="font-normal text-[var(--color-muted)]">
+                  — or write your own below
+                </span>
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                {spec.presets.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => choosePreset(preset)}
+                    aria-pressed={presetId === preset.id}
+                    className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${
+                      presetId === preset.id
+                        ? 'border-[var(--color-pink)] bg-[rgba(255,43,214,0.12)]'
+                        : 'border-[var(--color-line)] hover:border-[var(--color-blue)]'
+                    }`}
+                  >
+                    <span className="block text-sm font-bold leading-tight">{preset.label}</span>
+                    <span className="mt-0.5 block text-[11px] leading-snug text-[var(--color-muted)]">
+                      {preset.hint}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           <label htmlFor="prompt" className="mb-2 block text-sm font-bold">
-            Describe it in plain words
+            {spec.presets.length > 0 ? 'Scene description' : 'Describe it in plain words'}
           </label>
           <textarea
             id="prompt"
             ref={promptRef}
             value={prompt}
-            onChange={(event) => setPrompt(event.target.value)}
+            onChange={(event) => {
+              setPrompt(event.target.value);
+              setPresetId(null);
+            }}
             placeholder={spec.placeholder}
             rows={3}
             className="jv-input resize-y"
@@ -327,37 +482,13 @@ export default function Studio({ initialWallet }: { initialWallet: Wallet | null
             </ul>
           ) : null}
 
-          {spec.needsUpload ? (
-            <div className="mt-4">
-              <label htmlFor="photo" className="mb-2 block text-sm font-bold">
-                Your photo
-              </label>
-              <input
-                id="photo"
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/gif"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) void upload(file);
-                }}
-                className="jv-input file:mr-3 file:rounded-full file:border-0 file:bg-[var(--color-pink)] file:px-3 file:py-1.5 file:text-sm file:font-bold file:text-white"
-              />
-              {uploading ? (
-                <p className="mt-2 text-xs text-[var(--color-blue)] jv-pulse">Uploading…</p>
-              ) : null}
-              {imageUrl ? (
-                <p className="mt-2 text-xs text-[#8dffc4]">Photo ready.</p>
-              ) : null}
-            </div>
-          ) : null}
-
-          {spec.likenessRisk || spec.needsUpload ? (
+          {spec.likenessRisk || spec.input !== 'none' ? (
             <label className="mt-4 flex items-start gap-3 text-sm">
               <input
                 type="checkbox"
                 checked={consent}
                 onChange={(event) => setConsent(event.target.checked)}
-                className="mt-1 h-5 w-5 shrink-0 accent-[var(--color-pink)]"
+                className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--color-pink)]"
               />
               <span className="text-[var(--color-muted)]">
                 I am this person, or I have their written consent. We record the time you confirm
@@ -393,7 +524,7 @@ export default function Studio({ initialWallet }: { initialWallet: Wallet | null
             })}
           </div>
           <p className="mt-2 text-xs text-[var(--color-muted)]">
-            Draft first, then upgrade the one you like. It is cheaper than guessing.
+            Draft first, then upgrade the one you like. Cheaper than guessing.
           </p>
 
           <button
@@ -431,7 +562,10 @@ export default function Studio({ initialWallet }: { initialWallet: Wallet | null
               </div>
 
               <div>
-                <label htmlFor="duration" className="mb-1 block text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">
+                <label
+                  htmlFor="duration"
+                  className="mb-1 block text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]"
+                >
                   Length: {duration}s
                 </label>
                 <input
@@ -455,26 +589,32 @@ export default function Studio({ initialWallet }: { initialWallet: Wallet | null
                 <span className="text-[var(--color-muted)]">Generate sound</span>
               </label>
 
-              <div>
-                <label htmlFor="model" className="mb-1 block text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]">
-                  Model
-                </label>
-                <select
-                  id="model"
-                  value={modelOverride}
-                  onChange={(event) => setModelOverride(event.target.value)}
-                  className="jv-input"
-                >
-                  <option value="">
-                    Chosen for you ({MODELS[tier === 'draft' ? spec.draftModel : spec.finalModel].label})
-                  </option>
-                  {spec.alternateFinals.map((id) => (
-                    <option key={id} value={id}>
-                      {MODELS[id].label} — {MODELS[id].credits} credits
+              {spec.alternateFinals.length > 0 ? (
+                <div>
+                  <label
+                    htmlFor="model"
+                    className="mb-1 block text-xs font-bold uppercase tracking-wide text-[var(--color-muted)]"
+                  >
+                    Model
+                  </label>
+                  <select
+                    id="model"
+                    value={modelOverride}
+                    onChange={(event) => setModelOverride(event.target.value)}
+                    className="jv-input"
+                  >
+                    <option value="">
+                      Chosen for you (
+                      {MODELS[tier === 'draft' ? spec.draftModel : spec.finalModel].label})
                     </option>
-                  ))}
-                </select>
-              </div>
+                    {spec.alternateFinals.map((id) => (
+                      <option key={id} value={id}>
+                        {MODELS[id].label} — {MODELS[id].credits} credits
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
             </div>
           ) : null}
 
@@ -497,124 +637,149 @@ export default function Studio({ initialWallet }: { initialWallet: Wallet | null
           <button
             type="button"
             onClick={() => void generate()}
-            disabled={busy || prompt.trim().length < 3 || !affordable || (spec.needsUpload && !imageUrl)}
+            disabled={
+              busy || prompt.trim().length < 3 || !affordable || !inputsReady || !consentSatisfied(spec, consent)
+            }
             className="jv-btn jv-btn-primary mt-5 w-full"
           >
             {busy ? 'Starting…' : `Generate: ${cost} credits`}
           </button>
           <p className="mt-2 text-center text-xs text-[var(--color-muted)]">
-            {affordable
-              ? `That is ${creditsToUsd(cost)}. You are charged once, before it runs — and refunded automatically if it fails, is blocked, or comes back a duplicate.`
-              : 'Not enough credits for this one. Nothing will be charged.'}
+            {!affordable
+              ? 'Not enough credits for this one. Nothing will be charged.'
+              : `That is ${creditsToUsd(cost)}. Charged once, before it runs — and refunded automatically if it fails, is blocked, or comes back a duplicate.`}
           </p>
         </div>
       ) : null}
 
-      {jobs.length > 0 ? (
-        <>
-          <h2 className="mb-3 text-lg font-extrabold">Your generations</h2>
-          <div className="space-y-3">
-            {jobs.map((job) => {
-              const status = STATUS_COPY[job.status];
-              const running = !TERMINAL.includes(job.status);
-              return (
-                <article key={job.id} className="jv-card overflow-hidden">
-                  {job.output_url && job.status === 'completed' ? (
-                    isVideoUrl(job.output_url) ? (
-                      <video
-                        src={job.output_url}
-                        controls
-                        playsInline
-                        preload="metadata"
-                        className="aspect-video w-full bg-black object-contain"
-                      />
-                    ) : (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={job.output_url}
-                        alt={job.prompt}
-                        loading="lazy"
-                        className="aspect-video w-full bg-black object-contain"
-                      />
-                    )
-                  ) : null}
-
-                  <div className="p-4">
-                    <div className="mb-2 flex flex-wrap items-center gap-2">
-                      <Badge tone={status.tone}>
-                        {running ? <span className="jv-pulse">●</span> : null} {status.label}
-                      </Badge>
-                      <Badge tone="muted">{job.tier}</Badge>
-                      <Badge tone="muted">{job.cost_credits} cr</Badge>
-                      {job.refunded ? <Badge tone="good">+{job.cost_credits} refunded</Badge> : null}
-                    </div>
-
-                    <p className="line-clamp-2 text-sm text-[var(--color-muted)]">{job.prompt}</p>
-
-                    {job.error_reason ? (
-                      <p className="mt-2 text-sm text-[var(--color-yellow)]">{job.error_reason}</p>
+      <div id="results" className="scroll-mt-20">
+        {jobs.length > 0 ? (
+          <>
+            <h2 className="mb-3 text-lg font-extrabold">Your generations</h2>
+            <div className="space-y-3">
+              {jobs.map((job) => {
+                const status = STATUS_COPY[job.status];
+                const running = !TERMINAL.includes(job.status);
+                return (
+                  <article key={job.id} className="jv-card overflow-hidden">
+                    {running ? (
+                      <div className="flex aspect-video w-full items-center justify-center bg-black/50">
+                        <div className="text-center">
+                          <div className="mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-line)] border-t-[var(--color-pink)]" />
+                          <p className="text-xs font-semibold text-[var(--color-blue)]">
+                            {status.label}…
+                          </p>
+                          <p className="mt-1 text-[11px] text-[var(--color-faint)]">
+                            Usually under two minutes. You can close this tab — a failure still
+                            refunds itself.
+                          </p>
+                        </div>
+                      </div>
+                    ) : job.output_url && job.status === 'completed' ? (
+                      isVideoUrl(job.output_url) ? (
+                        <video
+                          src={job.output_url}
+                          controls
+                          playsInline
+                          loop
+                          preload="metadata"
+                          className="aspect-video w-full bg-black object-contain"
+                        />
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={job.output_url}
+                          alt={job.prompt}
+                          loading="lazy"
+                          className="aspect-video w-full bg-black object-contain"
+                        />
+                      )
                     ) : null}
 
-                    {job.status === 'nsfw' ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setTask(job.task);
-                          setPrompt(job.prompt);
-                          void rewrite();
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        className="jv-btn jv-btn-ghost mt-3 !min-h-10 !px-4 !text-sm"
-                      >
-                        Rewrite safely and retry
-                      </button>
-                    ) : null}
-
-                    {job.status === 'completed' ? (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {job.tier === 'draft' ? (
-                          <button
-                            type="button"
-                            onClick={() => void upgrade(job)}
-                            disabled={busy}
-                            className="jv-btn jv-btn-primary !min-h-10 !px-4 !text-sm"
-                          >
-                            Make it final: {MODELS[TASKS[job.task].finalModel].credits} credits
-                          </button>
-                        ) : null}
-                        <button
-                          type="button"
-                          onClick={() => void share(job)}
-                          className="jv-btn jv-btn-ghost !min-h-10 !px-4 !text-sm"
-                        >
-                          {job.share_slug ? 'Copy link' : 'Share'}
-                        </button>
-                        {job.output_url ? (
-                          <a
-                            href={job.output_url}
-                            download
-                            className="jv-btn jv-btn-ghost !min-h-10 !px-4 !text-sm"
-                          >
-                            Download
-                          </a>
-                        ) : null}
-                        {job.share_slug ? (
-                          <Link
-                            href={`/s/${job.share_slug}`}
-                            className="jv-btn jv-btn-ghost !min-h-10 !px-4 !text-sm"
-                          >
-                            Open page
-                          </Link>
+                    <div className="p-4">
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <Badge tone={status.tone}>{status.label}</Badge>
+                        <Badge tone="muted">{job.tier}</Badge>
+                        <Badge tone="muted">{job.cost_credits} cr</Badge>
+                        {job.refunded ? (
+                          <Badge tone="good">+{job.cost_credits} refunded</Badge>
                         ) : null}
                       </div>
-                    ) : null}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </>
-      ) : null}
+
+                      <p className="line-clamp-2 text-sm text-[var(--color-muted)]">{job.prompt}</p>
+
+                      {job.error_reason ? (
+                        <p className="mt-2 text-sm text-[var(--color-yellow)]">
+                          {job.error_reason}
+                        </p>
+                      ) : null}
+
+                      {job.status === 'nsfw' ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTask(job.task);
+                            setPrompt(job.prompt);
+                            void rewrite();
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                          className="jv-btn jv-btn-ghost mt-3 !min-h-10 !px-4 !text-sm"
+                        >
+                          Rewrite safely and retry
+                        </button>
+                      ) : null}
+
+                      {job.status === 'completed' ? (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {job.tier === 'draft' ? (
+                            <button
+                              type="button"
+                              onClick={() => void upgrade(job)}
+                              disabled={busy}
+                              className="jv-btn jv-btn-primary !min-h-10 !px-4 !text-sm"
+                            >
+                              Make it final: {MODELS[TASKS[job.task].finalModel].credits} credits
+                            </button>
+                          ) : null}
+                          <button
+                            type="button"
+                            onClick={() => void share(job)}
+                            className="jv-btn jv-btn-ghost !min-h-10 !px-4 !text-sm"
+                          >
+                            {job.share_slug ? 'Copy link' : 'Share'}
+                          </button>
+                          {job.output_url ? (
+                            <a
+                              href={job.output_url}
+                              download
+                              className="jv-btn jv-btn-ghost !min-h-10 !px-4 !text-sm"
+                            >
+                              Download
+                            </a>
+                          ) : null}
+                          {job.share_slug ? (
+                            <Link
+                              href={`/s/${job.share_slug}`}
+                              className="jv-btn jv-btn-ghost !min-h-10 !px-4 !text-sm"
+                            >
+                              Open page
+                            </Link>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </>
+        ) : null}
+      </div>
     </div>
   );
+}
+
+/** Consent is only demanded where a likeness is actually involved. */
+function consentSatisfied(spec: { likenessRisk: boolean; input: string }, consent: boolean) {
+  return spec.likenessRisk || spec.input !== 'none' ? consent : true;
 }

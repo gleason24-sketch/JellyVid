@@ -75,10 +75,10 @@ async function settle(request: APIRequestContext, jobId: string) {
 test.describe('landing page', () => {
   test('leads with the promises and needs no signup to start', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('money');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('movie');
     await expect(page.getByRole('heading', { name: 'Credits never expire' })).toBeVisible();
     await expect(page.getByText(`${SIGNUP_GRANT} free credits`).first()).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Make something free' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Put me in a scene — free' })).toBeVisible();
   });
 
   test('has no horizontal scroll on a phone', async ({ page }) => {
@@ -107,7 +107,7 @@ test.describe('generation funnel', () => {
 
     // The price is on the button before anything is clicked.
     await page.getByRole('button', { name: 'Cinematic shot' }).click();
-    await page.getByLabel('Describe it in plain words').fill('a lone figure on a neon-wet street');
+    await page.getByLabel('Scene description').fill('a lone figure on a neon-wet street');
     const generateButton = page.getByRole('button', { name: `Generate: ${DRAFT_COST} credits` });
     await expect(generateButton).toBeVisible();
 

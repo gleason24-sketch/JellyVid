@@ -1,14 +1,15 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { callPublic } from '@/lib/db';
+import GalleryGrid, { type GalleryItem } from '@/components/gallery-grid';
 import { CREDIT_PACKS, creditsToUsd } from '@/lib/pricing';
-import { MODELS, TASK_LIST, TASKS } from '@/lib/models';
+import { MODELS, STAR_PRESETS, TASKS } from '@/lib/models';
 import { SIGNUP_GRANT_CREDITS } from '@/lib/session';
-import { TaskIcon } from '@/components/icons';
 import { Section } from '@/components/ui';
 
-// Statically rendered for speed, but regenerated every five minutes so a
-// server-config change (notably HF_MOCK, which the demo banner reflects)
-// cannot stay baked into the HTML until the next deploy.
+// Statically rendered for speed, but regenerated every five minutes so the
+// gallery stays alive and a server-config change (notably HF_MOCK, which the
+// demo banner reflects) cannot stay baked into the HTML until the next deploy.
 export const revalidate = 300;
 
 const PROMISES = [
@@ -29,34 +30,45 @@ const PROMISES = [
   },
 ];
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  let gallery: GalleryItem[] = [];
+  try {
+    gallery = await callPublic<GalleryItem[]>('jv_gallery', { p_limit: 8 });
+  } catch {
+    gallery = [];
+  }
+
+  const draft = MODELS[TASKS.star_in_it.draftModel].credits;
+  const final = MODELS[TASKS.star_in_it.finalModel].credits;
+
   return (
     <div className="pb-10">
-      <section className="mx-auto w-full max-w-6xl px-4 pb-10 pt-10 sm:pt-16">
+      {/* ------------------------------------------------------------ hero --- */}
+      <section className="mx-auto w-full max-w-6xl px-4 pb-10 pt-10 sm:pt-14">
         <div className="grid items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
           <div>
             <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-[var(--color-line)] px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-blue)]">
               {SIGNUP_GRANT_CREDITS} free credits · no signup
             </p>
-            <h1 className="text-4xl font-extrabold leading-[1.05] sm:text-5xl lg:text-6xl">
-              AI video that doesn&apos;t play games
-              <span className="jv-glow-pink text-[var(--color-pink)]"> with your money.</span>
+            <h1 className="text-4xl font-extrabold leading-[1.04] sm:text-5xl lg:text-6xl">
+              Put yourself in
+              <span className="jv-glow-pink text-[var(--color-pink)]"> the movie.</span>
             </h1>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-[var(--color-muted)] sm:text-lg">
-              Credits that never expire. Refunds you don&apos;t have to ask for. Prices you see
-              before you click. Same frontier models — Seedance 2.5, Kling 3, Wan 3, SOUL 2 —
-              without the carnival.
+              Upload one selfie. Pick a scene. Get a cinematic video of{' '}
+              <em className="not-italic text-[var(--color-text)]">you</em> in it, in about a minute.
+              No app, no signup, no API key.
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Link href="/studio" className="jv-btn jv-btn-primary">
-                Make something free
+                Put me in a scene — free
               </Link>
-              <Link href="/promises" className="jv-btn jv-btn-ghost">
-                Read the promises
+              <Link href="/gallery" className="jv-btn jv-btn-ghost">
+                See what people made
               </Link>
             </div>
             <p className="mt-4 text-xs text-[var(--color-faint)]">
-              No card. No email. First generation in under a minute.
+              Runs on Seedance 2.5 with face inputs, through the Higgsfield API.
             </p>
           </div>
 
@@ -75,13 +87,65 @@ export default function LandingPage() {
               width={512}
               height={512}
               priority
-              sizes="(max-width: 640px) 70vw, 360px"
-              className="jv-drift mx-auto h-auto w-3/4 object-contain lg:w-full"
+              sizes="(max-width: 640px) 60vw, 360px"
+              className="jv-drift mx-auto h-auto w-3/5 object-contain lg:w-4/5"
             />
           </div>
         </div>
       </section>
 
+      {/* --------------------------------------------------------- scenes --- */}
+      <Section className="py-8" eyebrow="One tap" title="Eight scenes. No prompt writing.">
+        <p className="-mt-4 mb-6 max-w-2xl text-sm text-[var(--color-muted)]">
+          You do not have to know how to prompt. Pick the look and we write the shot — camera move,
+          lighting, lens, grade — then you can edit it if you want.
+        </p>
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+          {STAR_PRESETS.map((preset) => (
+            <Link
+              key={preset.id}
+              href="/studio?task=star_in_it"
+              className="jv-card p-4 transition-colors hover:border-[var(--color-pink)]"
+            >
+              <p className="text-sm font-bold leading-tight">{preset.label}</p>
+              <p className="mt-1 text-xs leading-snug text-[var(--color-muted)]">{preset.hint}</p>
+            </Link>
+          ))}
+        </div>
+      </Section>
+
+      {/* -------------------------------------------------------- gallery --- */}
+      {gallery.length > 0 ? (
+        <Section className="py-10" eyebrow="Made here" title="Real outputs, published by their makers">
+          <GalleryGrid items={gallery.slice(0, 8)} />
+          <div className="mt-6">
+            <Link href="/gallery" className="jv-btn jv-btn-ghost">
+              See the whole gallery
+            </Link>
+          </div>
+        </Section>
+      ) : null}
+
+      {/* ----------------------------------------------------- how it works --- */}
+      <Section className="py-10" eyebrow="How it works" title="Three steps, about a minute">
+        <div className="grid gap-3 sm:grid-cols-3">
+          {[
+            ['1', 'Upload a selfie', 'One to three photos of the face. Clear and well lit is all it needs.'],
+            ['2', 'Pick a scene', 'Neon city, action hero, film noir, 80s music video — eight to choose from.'],
+            ['3', 'Get your video', `A ${draft}-credit draft first. Like it? One tap upgrades it to the ${final}-credit final.`],
+          ].map(([step, title, body]) => (
+            <div key={step} className="jv-card p-5">
+              <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-pink)] text-sm font-extrabold text-white">
+                {step}
+              </div>
+              <h3 className="mb-1.5 font-bold">{title}</h3>
+              <p className="text-sm leading-relaxed text-[var(--color-muted)]">{body}</p>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      {/* -------------------------------------------------------- promises --- */}
       <Section className="py-10" eyebrow="The deal" title="Three promises, kept in the code">
         <div className="grid gap-4 sm:grid-cols-3">
           {PROMISES.map((promise) => (
@@ -97,52 +161,7 @@ export default function LandingPage() {
         </div>
       </Section>
 
-      <Section className="py-10" eyebrow="Start here" title="Four things. Not forty.">
-        <p className="-mt-4 mb-6 max-w-2xl text-sm text-[var(--color-muted)]">
-          No model grid, no preset maze. Pick the job, write a sentence, press the button. The
-          model is chosen for you and tucked under Advanced if you ever want it.
-        </p>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {TASK_LIST.map((task) => (
-            <Link key={task.id} href="/studio" className="jv-card group p-5 transition-colors hover:border-[var(--color-pink)]">
-              <TaskIcon
-                name={task.icon}
-                className="mb-3 h-7 w-7 text-[var(--color-blue)] transition-colors group-hover:text-[var(--color-pink)]"
-              />
-              <h3 className="mb-1 font-bold leading-tight">{task.title}</h3>
-              <p className="text-xs leading-snug text-[var(--color-muted)]">{task.blurb}</p>
-              <p className="mt-3 text-xs font-bold text-[var(--color-yellow)]">
-                Draft {MODELS[task.draftModel].credits} cr · Final{' '}
-                {MODELS[task.finalModel].credits} cr
-              </p>
-            </Link>
-          ))}
-        </div>
-      </Section>
-
-      <Section className="py-10" eyebrow="Draft, then final" title="Stop paying premium to find out it is wrong">
-        <div className="jv-card p-5 sm:p-7">
-          <div className="grid gap-6 sm:grid-cols-2">
-            <div>
-              <p className="mb-2 text-sm font-bold text-[var(--color-blue)]">1 · Draft it cheap</p>
-              <p className="text-sm leading-relaxed text-[var(--color-muted)]">
-                {MODELS[TASKS.cinematic_shot.draftModel].credits} credits (
-                {creditsToUsd(MODELS[TASKS.cinematic_shot.draftModel].credits)}) buys a fast, low-res
-                pass. Iterate until the idea is right.
-              </p>
-            </div>
-            <div>
-              <p className="mb-2 text-sm font-bold text-[var(--color-pink)]">2 · Upgrade the keeper</p>
-              <p className="text-sm leading-relaxed text-[var(--color-muted)]">
-                One click promotes the draft you liked to{' '}
-                {MODELS[TASKS.cinematic_shot.finalModel].label}, reusing the exact prompt and
-                settings. You pay the premium rate once, on the one you want.
-              </p>
-            </div>
-          </div>
-        </div>
-      </Section>
-
+      {/* --------------------------------------------------------- pricing --- */}
       <Section className="py-10" eyebrow="Pricing" title="One rate. Every pack. No subscription.">
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {CREDIT_PACKS.map((pack) => (
@@ -158,7 +177,8 @@ export default function LandingPage() {
         </div>
         <p className="mt-4 text-sm text-[var(--color-muted)]">
           Every pack is 1 credit for 1 cent. A bigger pack buys more credits, never cheaper ones —
-          so there is nothing to work out and nothing to regret.
+          so there is nothing to work out and nothing to regret. A finished video is{' '}
+          {creditsToUsd(final)}.
         </p>
         <div className="mt-6">
           <Link href="/pricing" className="jv-btn jv-btn-ghost">
@@ -167,6 +187,7 @@ export default function LandingPage() {
         </div>
       </Section>
 
+      {/* ------------------------------------------------------ comparison --- */}
       <Section className="py-10" title="How this compares">
         <div className="jv-card overflow-x-auto">
           <table className="w-full min-w-[340px] text-left text-sm">
@@ -182,9 +203,10 @@ export default function LandingPage() {
             </thead>
             <tbody className="divide-y divide-[var(--color-line)]">
               {[
+                ['You want to try it', 'Sign up, pick a plan, add a card', 'Type a prompt. That is it.'],
                 ['Your billing period rolls over', 'Unused credits vanish', 'Nothing happens. They are yours.'],
                 ['A generation fails', 'You open a support ticket', 'Refunded before you ask'],
-                ['Moderation blocks you', 'Charged anyway, no reason given', 'Costs $0, plain-English reason, one-click rewrite'],
+                ['Moderation blocks you', 'Charged anyway, no reason given', 'Costs $0, plain reason, one-click rewrite'],
                 ['A re-roll returns the same image', 'You pay again', 'Detected and refunded automatically'],
                 ['You want to stop', 'Buried cancellation flow', 'One button refunds the unused balance'],
               ].map(([scenario, them, us]) => (
@@ -213,7 +235,7 @@ export default function LandingPage() {
           </p>
           <div className="mt-6 flex justify-center">
             <Link href="/studio" className="jv-btn jv-btn-primary">
-              Open the studio
+              Put me in a scene
             </Link>
           </div>
         </div>

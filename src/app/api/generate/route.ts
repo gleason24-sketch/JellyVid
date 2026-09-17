@@ -14,6 +14,7 @@ interface GenerateBody {
   durationSeconds?: number;
   withAudio?: boolean;
   imageUrl?: string;
+  imageUrls?: string[];
   modelOverride?: string;
   consent?: boolean;
   parentJobId?: string;
@@ -38,6 +39,7 @@ export async function POST(request: Request) {
       durationSeconds: body.durationSeconds,
       withAudio: body.withAudio,
       imageUrl: body.imageUrl,
+      imageUrls: body.imageUrls,
       modelOverride: body.modelOverride,
       consent: body.consent,
       parentJobId: body.parentJobId,

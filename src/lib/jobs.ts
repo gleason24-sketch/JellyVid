@@ -95,6 +95,8 @@ export interface CreateJobInput {
   durationSeconds?: number;
   withAudio?: boolean;
   imageUrl?: string;
+  /** Face/reference images for a cast job. */
+  imageUrls?: string[];
   modelOverride?: string;
   /** Required before any likeness job runs. Complaint-map consent rule. */
   consent?: boolean;
@@ -129,10 +131,22 @@ export async function createJob(input: CreateJobInput): Promise<CreateJobResult>
 
   const model = modelForTask(input.task, input.tier, input.modelOverride);
 
-  if (model.requiresImage && !input.imageUrl) {
+  const references = (input.imageUrls ?? []).filter(Boolean);
+
+  if (model.input === 'start-image' && !input.imageUrl) {
     throw new JobError('This one needs a photo to work from.', 'image_required');
   }
-  if ((task.likenessRisk || model.requiresImage) && !input.consent) {
+  if (model.input === 'references' && references.length === 0) {
+    throw new JobError('Add at least one photo of the face to cast.', 'reference_required');
+  }
+  if (model.maxReferences && references.length > model.maxReferences) {
+    throw new JobError(
+      `Use at most ${model.maxReferences} reference photos.`,
+      'too_many_references',
+    );
+  }
+  // A likeness is involved whenever a face is the input or the subject.
+  if ((task.likenessRisk || model.input !== 'none') && !input.consent) {
     throw new JobError(
       'Confirm you are this person or have their written consent.',
       'consent_required',
@@ -158,6 +172,7 @@ export async function createJob(input: CreateJobInput): Promise<CreateJobResult>
     prompt: fullPrompt,
     aspectRatio: input.aspectRatio ?? task.defaultAspect,
     imageUrl: input.imageUrl,
+    imageUrls: references,
     durationSeconds: input.durationSeconds ?? task.defaultDuration,
     withAudio: input.withAudio ?? task.defaultAudio,
   };
@@ -172,7 +187,7 @@ export async function createJob(input: CreateJobInput): Promise<CreateJobResult>
     p_prompt: prompt,
     p_prompt_key: promptKey(input.task, prompt),
     p_params: generationInput as unknown as Record<string, unknown>,
-    p_input_url: input.imageUrl ?? null,
+    p_input_url: input.imageUrl ?? references[0] ?? null,
     p_cost: cost,
     p_consent_at: input.consent ? new Date().toISOString() : null,
     p_parent_job_id: input.parentJobId ?? null,
