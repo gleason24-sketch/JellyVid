@@ -291,3 +291,22 @@ tell, so under mock the gallery page and landing band render the reel instead.
 The `/api/gallery` feed is unchanged (tests exercise the real DB path through
 it), and once real generation is on, user posts take over with the reel as
 seeds so the grid is never empty.
+
+### Clips load only while on screen
+
+The landing page carries the eight-scene rail plus the eight-seed gallery band
+— sixteen clips, 17 MB if they all autoplay, and sixteen decoders on a phone.
+`LazyVideo` uses `preload="none"` and an IntersectionObserver: a tile costs
+nothing until it scrolls into view and pauses when it leaves, with the scene's
+colour poster showing meanwhile. It also never starts under
+`prefers-reduced-motion`. Only the hero loads eagerly, because it is the
+first thing on the page. The reel itself is the demo; this is what keeps the
+demo from being the thing that makes the page slow.
+
+### The link card carries the demo
+
+`opengraph-image` / `twitter-image` are rendered at build from the reel
+portrait with the headline set in Archivo Black. The OG renderer needs a
+static TTF, which `next/font` does not emit, so the face is vendored under
+`src/app/fonts/` with its OFL licence. This is what a quote-tweet of the site
+shows, so it shows the selfie rather than an app icon.

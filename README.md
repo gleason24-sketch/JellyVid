@@ -10,6 +10,9 @@ other providers do not: **Seedance 2.5 reference-to-video with real face
 inputs, available in the US**. Eight curated scenes mean you never have to write
 a prompt.
 
+The landing page is the demo: one synthetic portrait, cast by Seedance 2.5 into
+all eight scenes, playing in the hero and every scene tile. See `public/reel/`.
+
 Underneath it is a studio that refuses to play games with your money — credits
 that never expire, refunds you don't have to ask for, and the price on the
 button before you press it. See [`CLAUDE.md`](CLAUDE.md) for the complaint → fix

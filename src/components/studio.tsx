@@ -14,6 +14,7 @@ import {
 import { creditsToUsd } from '@/lib/pricing';
 import { Badge, BalanceDisplay } from './ui';
 import { TaskIcon } from './icons';
+import LazyVideo from './lazy-video';
 
 interface Wallet {
   balance_credits: number;
@@ -480,13 +481,8 @@ export default function Studio({
                         }}
                       />
                       {preset.previewUrl ? (
-                        <video
+                        <LazyVideo
                           src={preset.previewUrl}
-                          muted
-                          loop
-                          autoPlay
-                          playsInline
-                          preload="metadata"
                           className="absolute inset-0 h-full w-full object-cover"
                         />
                       ) : null}

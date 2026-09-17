@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { TASKS, type TaskId } from '@/lib/models';
+import LazyVideo from './lazy-video';
 
 export interface GalleryItem {
   share_slug: string;
@@ -45,14 +46,18 @@ export default function GalleryGrid({ items }: { items: GalleryItem[] }) {
             href={item.href ?? `/s/${item.share_slug}`}
             className="jv-tile group block aspect-[3/4] transition-transform duration-200 hover:-translate-y-1"
           >
-            {isVideoUrl(item.output_url) ? (
+            {isVideoUrl(item.output_url) && item.autoplay ? (
+              <LazyVideo
+                src={item.output_url}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            ) : isVideoUrl(item.output_url) ? (
               <video
                 src={item.output_url}
                 muted
                 loop
                 playsInline
-                autoPlay={item.autoplay}
-                preload={item.autoplay ? 'auto' : 'metadata'}
+                preload="metadata"
                 poster={item.poster_url ?? undefined}
                 className="absolute inset-0 h-full w-full object-cover"
               />

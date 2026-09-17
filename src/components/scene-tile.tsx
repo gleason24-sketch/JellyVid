@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ScenePreset } from '@/lib/models';
+import LazyVideo from './lazy-video';
 
 /**
  * A scene tile.
@@ -51,13 +52,8 @@ export default function SceneTile({
       ) : null}
 
       {preset.previewUrl ? (
-        <video
+        <LazyVideo
           src={preset.previewUrl}
-          muted
-          loop
-          autoPlay
-          playsInline
-          preload="metadata"
           className="absolute inset-0 h-full w-full object-cover"
         />
       ) : null}
