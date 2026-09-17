@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { callPublic } from '@/lib/db';
+import { isMockMode } from '@/lib/env';
 import GalleryGrid, { type GalleryItem } from '@/components/gallery-grid';
+import { reelAsGallery } from '@/lib/reel';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,17 +15,19 @@ export const metadata: Metadata = {
 export default async function GalleryPage() {
   let items: GalleryItem[] = [];
   try {
-    items = await callPublic<GalleryItem[]>('jv_gallery', { p_limit: 48 });
+    // Placeholder outputs are not shown as real work while generation is mocked.
+    items = isMockMode() ? [] : await callPublic<GalleryItem[]>('jv_gallery', { p_limit: 48 });
   } catch {
     items = [];
   }
+  items = [...items, ...reelAsGallery()];
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-20 pt-10">
       <h1 className="jv-display text-[clamp(2rem,9vw,3.5rem)]">Made with JellyVid</h1>
       <p className="mt-3 max-w-2xl text-[var(--color-muted)]">
-        Everything here was published on purpose by the person who made it. Tap one to see the
-        prompt and the model behind it.
+        Published on purpose by the people who made them. The first eight are our demo reel — one
+        synthetic face, cast into every scene. Tap any to put yourself in it.
       </p>
 
       <div className="mt-8">

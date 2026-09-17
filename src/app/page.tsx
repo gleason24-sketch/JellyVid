@@ -1,9 +1,12 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { callPublic } from '@/lib/db';
+import { isMockMode } from '@/lib/env';
 import GalleryGrid, { type GalleryItem } from '@/components/gallery-grid';
+import HeroReel from '@/components/hero-reel';
 import SceneTile from '@/components/scene-tile';
 import { MODELS, STAR_PRESETS, TASKS } from '@/lib/models';
+import { REEL, REEL_PORTRAIT, reelAsGallery } from '@/lib/reel';
 import { SIGNUP_GRANT_CREDITS } from '@/lib/session';
 import { creditsToUsd } from '@/lib/pricing';
 
@@ -17,12 +20,17 @@ export default async function LandingPage() {
   let stats: { generations?: number; credits_refunded?: number } = {};
   try {
     [gallery, stats] = await Promise.all([
-      callPublic<GalleryItem[]>('jv_gallery', { p_limit: 12 }),
+      isMockMode()
+        ? Promise.resolve<GalleryItem[]>([])
+        : callPublic<GalleryItem[]>('jv_gallery', { p_limit: 12 }),
       callPublic<{ generations: number; credits_refunded: number }>('jv_stats'),
     ]);
   } catch {
     /* an empty page is better than a fabricated one */
   }
+  // Placeholder outputs are never shown as if they were real work; the reel
+  // stands in for the gallery until real generation is switched on.
+  const featured = [...gallery, ...reelAsGallery()].slice(0, 12);
 
   const draft = MODELS[TASKS.star_in_it.draftModel].credits;
   const final = MODELS[TASKS.star_in_it.finalModel].credits;
@@ -37,34 +45,46 @@ export default async function LandingPage() {
           style={{ background: 'radial-gradient(circle, rgba(255,43,214,0.28), transparent 68%)' }}
         />
 
-        <div className="mx-auto max-w-7xl">
-          <p className="jv-eyebrow mb-5 flex items-center gap-2">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--color-pink)] jv-pulse" />
-            {SIGNUP_GRANT_CREDITS} free credits · no signup
-          </p>
+        <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+          <div>
+            <p className="jv-eyebrow mb-5 flex items-center gap-2">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--color-pink)] jv-pulse" />
+              {SIGNUP_GRANT_CREDITS} free credits · no signup
+            </p>
 
-          <h1 className="jv-display max-w-3xl text-[clamp(2.75rem,12vw,7rem)]">
-            Put yourself
-            <br />
-            in the <span className="text-[var(--color-pink)]">movie</span>.
-          </h1>
+            <h1 className="jv-display max-w-3xl text-[clamp(2.75rem,12vw,7rem)]">
+              Put yourself
+              <br />
+              in the <span className="text-[var(--color-pink)]">movie</span>.
+            </h1>
 
-          <p className="mt-6 max-w-lg text-[15px] leading-relaxed text-[var(--color-muted)] sm:text-lg">
-            One selfie. One tap. A cinematic video of you in it — about a minute later.
-          </p>
+            <p className="mt-6 max-w-lg text-[15px] leading-relaxed text-[var(--color-muted)] sm:text-lg">
+              One selfie. One tap. A cinematic video of you in it — about a minute later.
+            </p>
 
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/studio" className="jv-btn jv-btn-primary">
-              Put me in a scene
-            </Link>
-            <Link href="/gallery" className="jv-btn jv-btn-ghost">
-              See the gallery
-            </Link>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/studio" className="jv-btn jv-btn-primary">
+                Put me in a scene
+              </Link>
+              <Link href="/gallery" className="jv-btn jv-btn-ghost">
+                See the gallery
+              </Link>
+            </div>
+
+            <p className="mt-5 text-xs text-[var(--color-faint)]">
+              Seedance 2.5 with face inputs, via the Higgsfield API
+            </p>
           </div>
 
-          <p className="mt-5 text-xs text-[var(--color-faint)]">
-            Seedance 2.5 with face inputs, via the Higgsfield API
-          </p>
+          {/* The demo, not a description of it: one face, every scene. */}
+          {REEL.length > 0 ? (
+            <div className="pt-4 lg:pt-0">
+              <HeroReel clips={REEL} portrait={REEL_PORTRAIT} />
+              <p className="mt-5 text-center text-xs text-[var(--color-faint)]">
+                Every clip above was cast from that one photo. Same model you get.
+              </p>
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -98,14 +118,14 @@ export default async function LandingPage() {
       </section>
 
       {/* -------------------------------------------------------- gallery --- */}
-      {gallery.length > 0 ? (
+      {featured.length > 0 ? (
         <section className="px-4 py-8 sm:py-12">
           <div className="mx-auto max-w-7xl">
             <div className="mb-5 flex items-end justify-between gap-4">
               <div>
                 <p className="jv-eyebrow mb-2">Made here</p>
                 <h2 className="jv-display text-[clamp(1.6rem,6vw,2.75rem)]">
-                  Published by their makers
+                  {gallery.length > 0 ? 'Published by their makers' : 'One face. Eight films.'}
                 </h2>
               </div>
               <Link
@@ -115,7 +135,7 @@ export default async function LandingPage() {
                 See all →
               </Link>
             </div>
-            <GalleryGrid items={gallery.slice(0, 12)} />
+            <GalleryGrid items={featured} />
           </div>
         </section>
       ) : null}

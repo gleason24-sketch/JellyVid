@@ -307,7 +307,8 @@ export const STAR_PRESETS: ScenePreset[] = [
     aspect: '9:16',
     duration: 5,
     audio: true,
-    tone: ['#ff2bd6', '#1b0f4a']
+    tone: ['#ff2bd6', '#1b0f4a'],
+    previewUrl: '/reel/neon-city.mp4'
   },
   {
     id: 'action-hero',
@@ -318,7 +319,8 @@ export const STAR_PRESETS: ScenePreset[] = [
     aspect: '9:16',
     duration: 5,
     audio: true,
-    tone: ['#ff6a1f', '#2b0806']
+    tone: ['#ff6a1f', '#2b0806'],
+    previewUrl: '/reel/action-hero.mp4'
   },
   {
     id: 'fashion',
@@ -329,7 +331,8 @@ export const STAR_PRESETS: ScenePreset[] = [
     aspect: '9:16',
     duration: 5,
     audio: false,
-    tone: ['#f5f0e8', '#3a3a3a']
+    tone: ['#f5f0e8', '#3a3a3a'],
+    previewUrl: '/reel/fashion.mp4'
   },
   {
     id: 'eighties',
@@ -340,7 +343,8 @@ export const STAR_PRESETS: ScenePreset[] = [
     aspect: '9:16',
     duration: 5,
     audio: true,
-    tone: ['#ff3cac', '#2b1055']
+    tone: ['#ff3cac', '#2b1055'],
+    previewUrl: '/reel/eighties.mp4'
   },
   {
     id: 'noir',
@@ -351,7 +355,8 @@ export const STAR_PRESETS: ScenePreset[] = [
     aspect: '9:16',
     duration: 5,
     audio: true,
-    tone: ['#d9d9d9', '#0a0a0a']
+    tone: ['#d9d9d9', '#0a0a0a'],
+    previewUrl: '/reel/noir.mp4'
   },
   {
     id: 'space',
@@ -362,7 +367,8 @@ export const STAR_PRESETS: ScenePreset[] = [
     aspect: '9:16',
     duration: 5,
     audio: true,
-    tone: ['#6fe9ff', '#04122e']
+    tone: ['#6fe9ff', '#04122e'],
+    previewUrl: '/reel/space.mp4'
   },
   {
     id: 'western',
@@ -373,7 +379,8 @@ export const STAR_PRESETS: ScenePreset[] = [
     aspect: '16:9',
     duration: 5,
     audio: true,
-    tone: ['#ffb347', '#3d1e08']
+    tone: ['#ffb347', '#3d1e08'],
+    previewUrl: '/reel/western.mp4'
   },
   {
     id: 'red-carpet',
@@ -384,7 +391,8 @@ export const STAR_PRESETS: ScenePreset[] = [
     aspect: '9:16',
     duration: 5,
     audio: true,
-    tone: ['#ffd84a', '#2a0413']
+    tone: ['#ffd84a', '#2a0413'],
+    previewUrl: '/reel/red-carpet.mp4'
   },
 ];
 

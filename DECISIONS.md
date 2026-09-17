@@ -265,3 +265,29 @@ credits: the empty state was designed, not defaulted.
 It was five lines above the fold, which pushed the actual product below it. A
 disclaimer that buries what people came for is its own kind of dishonesty. It
 is now a single line with a small chip, still non-dismissible.
+
+### The demo reel: one synthetic face, eight films
+
+The site had no real output on it anywhere, and nothing describes face inputs
+as well as seeing one face carried through eight scenes. So the reel was
+generated the way the product generates: a SOUL 2 portrait, then Seedance 2.5
+reference-to-video for every scene preset (`generate_audio` off; clips are
+muted on the page). The subject is synthetic — no real person's likeness.
+
+It cost 137.5 consumer credits (32.5 for the 720p hero, 15 each for seven
+480p scenes), authorised by the owner. Clips live in `public/reel/` (17 MB,
+H.264) and are keyed by scene id, so regenerating with a different subject is
+one manifest and `scripts/fetch-reel.mjs`.
+
+Every tile paints its scene's colour poster first and the clip on top. If a
+browser cannot decode the clip, the poster shows — never a black box. (This
+sandbox's Chromium build has no H.264, which is exactly the case it covers.)
+
+### Placeholder outputs never appear in the public gallery
+
+While `HF_MOCK` is on, user-shared outputs are fixtures. Showing them in the
+gallery as if they were real work would be the one lie this product cannot
+tell, so under mock the gallery page and landing band render the reel instead.
+The `/api/gallery` feed is unchanged (tests exercise the real DB path through
+it), and once real generation is on, user posts take over with the reel as
+seeds so the grid is never empty.

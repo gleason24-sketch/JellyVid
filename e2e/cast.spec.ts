@@ -124,9 +124,15 @@ test.describe('the gallery loop', () => {
     const slug = url.replace('/s/', '');
     expect(items.some((item) => item.share_slug === slug)).toBe(true);
 
+    // The page itself never shows placeholder outputs as real work: under
+    // HF_MOCK it renders the demo reel instead, and each reel tile is a remix
+    // link into the studio. (With real generation on, user posts appear here.)
     await page.goto('/gallery');
     await expect(page.getByRole('heading', { name: 'Made with JellyVid' })).toBeVisible();
-    await expect(page.locator(`a[href="/s/${slug}"]`).first()).toBeVisible();
+    await expect(
+      page.locator('a[href="/studio?task=star_in_it&scene=neon-city"]').first(),
+    ).toBeVisible();
+    await expect(page.locator(`a[href="/s/${slug}"]`)).toHaveCount(0);
   });
 });
 

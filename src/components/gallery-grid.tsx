@@ -11,6 +11,10 @@ export interface GalleryItem {
   output_url: string;
   poster_url: string | null;
   created_at: string;
+  /** Overrides the share-page link; used by curated reel seeds. */
+  href?: string;
+  /** Curated seeds autoplay so the grid moves; user posts play on hover/tap. */
+  autoplay?: boolean;
 }
 
 function isVideoUrl(url: string): boolean {
@@ -37,8 +41,8 @@ export default function GalleryGrid({ items }: { items: GalleryItem[] }) {
         const label = TASKS[item.task as TaskId]?.title ?? item.task.replace(/_/g, ' ');
         return (
           <Link
-            key={item.share_slug}
-            href={`/s/${item.share_slug}`}
+            key={item.href ?? item.share_slug}
+            href={item.href ?? `/s/${item.share_slug}`}
             className="jv-tile group block aspect-[3/4] transition-transform duration-200 hover:-translate-y-1"
           >
             {isVideoUrl(item.output_url) ? (
@@ -47,7 +51,8 @@ export default function GalleryGrid({ items }: { items: GalleryItem[] }) {
                 muted
                 loop
                 playsInline
-                preload="metadata"
+                autoPlay={item.autoplay}
+                preload={item.autoplay ? 'auto' : 'metadata'}
                 poster={item.poster_url ?? undefined}
                 className="absolute inset-0 h-full w-full object-cover"
               />

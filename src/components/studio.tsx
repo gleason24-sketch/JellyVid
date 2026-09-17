@@ -472,6 +472,13 @@ export default function Studio({
                         selected ? 'ring-2 ring-[var(--color-pink)]' : 'opacity-80 hover:opacity-100'
                       }`}
                     >
+                      <span
+                        aria-hidden
+                        className="absolute inset-0"
+                        style={{
+                          background: `linear-gradient(155deg, ${from} -20%, ${to} 62%, #000 100%)`,
+                        }}
+                      />
                       {preset.previewUrl ? (
                         <video
                           src={preset.previewUrl}
@@ -479,17 +486,10 @@ export default function Studio({
                           loop
                           autoPlay
                           playsInline
+                          preload="metadata"
                           className="absolute inset-0 h-full w-full object-cover"
                         />
-                      ) : (
-                        <span
-                          aria-hidden
-                          className="absolute inset-0"
-                          style={{
-                            background: `linear-gradient(155deg, ${from} -20%, ${to} 62%, #000 100%)`,
-                          }}
-                        />
-                      )}
+                      ) : null}
                       <span className="jv-tile-label block">
                         <span className="jv-display block text-[13px] text-white">
                           {preset.label}

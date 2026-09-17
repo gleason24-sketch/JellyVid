@@ -25,6 +25,31 @@ export default function SceneTile({
       href={href}
       className="jv-tile group block aspect-[3/4] transition-transform duration-200 hover:-translate-y-1"
     >
+      {/* The poster is always painted first. If the clip cannot load or the
+          browser cannot decode it, this is what shows — never a black box. */}
+      <div
+        aria-hidden
+        className="absolute inset-0"
+        style={{ background: `linear-gradient(155deg, ${from} -20%, ${to} 62%, #000 100%)` }}
+      />
+      <div
+        aria-hidden
+        className="absolute inset-0 opacity-70 mix-blend-screen"
+        style={{
+          background: `radial-gradient(70% 45% at 72% 18%, ${from}55, transparent 70%)`,
+        }}
+      />
+      {!preset.previewUrl ? (
+        <div
+          aria-hidden
+          className="absolute inset-0 opacity-[0.16]"
+          style={{
+            backgroundImage:
+              'repeating-linear-gradient(0deg, rgba(255,255,255,0.5) 0 1px, transparent 1px 3px)',
+          }}
+        />
+      ) : null}
+
       {preset.previewUrl ? (
         <video
           src={preset.previewUrl}
@@ -35,31 +60,7 @@ export default function SceneTile({
           preload="metadata"
           className="absolute inset-0 h-full w-full object-cover"
         />
-      ) : (
-        <>
-          <div
-            aria-hidden
-            className="absolute inset-0"
-            style={{ background: `linear-gradient(155deg, ${from} -20%, ${to} 62%, #000 100%)` }}
-          />
-          {/* A soft light bloom so the flat field reads as a lit scene. */}
-          <div
-            aria-hidden
-            className="absolute inset-0 opacity-70 mix-blend-screen"
-            style={{
-              background: `radial-gradient(70% 45% at 72% 18%, ${from}55, transparent 70%)`,
-            }}
-          />
-          <div
-            aria-hidden
-            className="absolute inset-0 opacity-[0.16]"
-            style={{
-              backgroundImage:
-                'repeating-linear-gradient(0deg, rgba(255,255,255,0.5) 0 1px, transparent 1px 3px)',
-            }}
-          />
-        </>
-      )}
+      ) : null}
 
       <div className="jv-tile-label">
         <p
