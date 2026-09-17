@@ -1,8 +1,18 @@
 import type { Metadata, Viewport } from 'next';
+import { Archivo } from 'next/font/google';
 import Link from 'next/link';
 import Image from 'next/image';
 import DemoBanner from '@/components/demo-banner';
+import TabBar from '@/components/tab-bar';
 import './globals.css';
+
+// One family, full weight range. The display weights (800/900) set uppercase
+// and tight, which is what gives a studio site its voice.
+const archivo = Archivo({
+  subsets: ['latin'],
+  variable: '--font-archivo',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://jellyvid.com'),
@@ -38,7 +48,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#08060c',
+  themeColor: '#000000',
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
@@ -46,55 +56,50 @@ export const viewport: Viewport = {
 
 function Nav() {
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--color-line)] bg-[rgba(8,6,12,0.82)] backdrop-blur-xl">
+    <header className="sticky top-0 z-50 bg-black/80 backdrop-blur-xl">
       <nav
-        className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-3 sm:gap-3"
+        className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3"
         aria-label="Main navigation"
       >
         <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="JellyVid home">
           <Image
             src="/logo-128.png"
             alt=""
-            width={32}
-            height={32}
+            width={28}
+            height={28}
             priority
-            className="h-7 w-7 object-contain sm:h-8 sm:w-8"
+            className="h-7 w-7 object-contain"
           />
-          <span className="text-base font-extrabold tracking-tight jv-glow-pink sm:text-lg">
-            JellyVid
-          </span>
+          <span className="jv-display text-[17px]">JellyVid</span>
         </Link>
 
-        <div className="ml-auto flex items-center gap-1 text-sm sm:gap-2">
-          {/* At 320px the bar cannot hold both text links plus the CTA; pricing
-              is one tap away from the footer, the wallet and the studio. */}
-          <Link
-            href="/pricing"
-            className="hidden rounded-full px-2.5 py-2 text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)] min-[380px]:block sm:px-3"
-          >
-            Pricing
-          </Link>
-          <Link
-            href="/gallery"
-            className="hidden rounded-full px-3 py-2 text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)] sm:block"
-          >
-            Gallery
-          </Link>
-          <Link
-            href="/wallet"
-            className="rounded-full px-2.5 py-2 text-[var(--color-muted)] transition-colors hover:text-[var(--color-text)] sm:px-3"
-          >
-            Wallet
-          </Link>
-          <Link
-            href="/studio"
-            className="jv-btn jv-btn-primary !min-h-10 whitespace-nowrap !px-4 !text-sm"
-          >
-            {/* "Open studio" wraps at 390px, so the phone gets the short label. */}
-            <span className="sm:hidden">Studio</span>
-            <span className="hidden sm:inline">Open studio</span>
+        {/* Desktop links. On phones this is the bottom tab bar instead. */}
+        <div className="ml-auto hidden items-center gap-1 text-sm sm:flex">
+          {[
+            ['/gallery', 'Gallery'],
+            ['/pricing', 'Pricing'],
+            ['/stats', 'Stats'],
+            ['/wallet', 'Wallet'],
+          ].map(([href, label]) => (
+            <Link
+              key={href}
+              href={href}
+              className="rounded-full px-3 py-2 font-medium text-[var(--color-muted)] transition-colors hover:text-white"
+            >
+              {label}
+            </Link>
+          ))}
+          <Link href="/studio" className="jv-btn jv-btn-light !min-h-9 !px-4 !text-sm">
+            Create
           </Link>
         </div>
+
+        <Link
+          href="/studio"
+          className="jv-btn jv-btn-primary ml-auto !min-h-9 whitespace-nowrap !px-4 !text-sm sm:hidden"
+        >
+          Create
+        </Link>
       </nav>
     </header>
   );
@@ -102,39 +107,38 @@ function Nav() {
 
 function Footer() {
   return (
-    <footer className="mt-20 border-t border-[var(--color-line)] px-4 py-10">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 text-sm text-[var(--color-muted)] sm:flex-row sm:items-start sm:justify-between">
-        <div className="max-w-sm">
+    <footer className="mt-16 px-4 py-10">
+      <div className="jv-hr mx-auto mb-8 max-w-7xl" />
+      <div className="mx-auto flex max-w-7xl flex-col gap-6 text-sm text-[var(--color-muted)] sm:flex-row sm:items-start sm:justify-between">
+        <div className="max-w-xs">
           <div className="mb-2 flex items-center gap-2">
-            <Image src="/logo-128.png" alt="" width={24} height={24} className="h-6 w-6" />
-            <span className="font-bold text-[var(--color-text)]">JellyVid</span>
+            <Image src="/logo-128.png" alt="" width={22} height={22} className="h-[22px] w-[22px]" />
+            <span className="jv-display text-sm text-white">JellyVid</span>
           </div>
-          <p>
-            Credits never expire. Failed, blocked and duplicate generations refund themselves.
-            You see the price before you click.
+          <p className="leading-relaxed">
+            Credits never expire. Failed generations refund themselves. The price is on the button.
           </p>
         </div>
-        <nav aria-label="Footer" className="flex flex-wrap gap-x-4">
+        <nav aria-label="Footer" className="flex flex-wrap gap-x-5">
           {[
             ['/studio', 'Studio'],
             ['/gallery', 'Gallery'],
             ['/pricing', 'Pricing'],
             ['/wallet', 'Wallet'],
             ['/stats', 'Stats'],
-            ['/promises', 'Our promises'],
+            ['/promises', 'Promises'],
           ].map(([href, label]) => (
             <Link
               key={href}
               href={href}
-              // py-2.5 keeps these above the 44px touch target on a phone.
-              className="inline-flex min-h-11 items-center hover:text-[var(--color-text)]"
+              className="inline-flex min-h-11 items-center transition-colors hover:text-white"
             >
               {label}
             </Link>
           ))}
         </nav>
       </div>
-      <p className="mx-auto mt-8 max-w-6xl text-xs text-[var(--color-faint)]">
+      <p className="mx-auto mt-8 max-w-7xl text-xs text-[var(--color-faint)]">
         Generation runs on the Higgsfield API. JellyVid is an independent product and is not
         affiliated with any model provider.
       </p>
@@ -144,8 +148,8 @@ function Footer() {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="antialiased">
+    <html lang="en" className={archivo.variable}>
+      <body className="font-[family-name:var(--font-archivo)] antialiased">
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-[var(--color-pink)] focus:px-4 focus:py-2 focus:text-white"
@@ -154,8 +158,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </a>
         <Nav />
         <DemoBanner />
-        <main id="main">{children}</main>
+        {/* pb-24 on mobile clears the fixed tab bar. */}
+        <main id="main" className="pb-24 sm:pb-0">
+          {children}
+        </main>
         <Footer />
+        <TabBar />
       </body>
     </html>
   );

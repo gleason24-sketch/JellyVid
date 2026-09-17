@@ -2,244 +2,222 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { callPublic } from '@/lib/db';
 import GalleryGrid, { type GalleryItem } from '@/components/gallery-grid';
-import { CREDIT_PACKS, creditsToUsd } from '@/lib/pricing';
+import SceneTile from '@/components/scene-tile';
 import { MODELS, STAR_PRESETS, TASKS } from '@/lib/models';
 import { SIGNUP_GRANT_CREDITS } from '@/lib/session';
-import { Section } from '@/components/ui';
+import { creditsToUsd } from '@/lib/pricing';
 
-// Statically rendered for speed, but regenerated every five minutes so the
-// gallery stays alive and a server-config change (notably HF_MOCK, which the
-// demo banner reflects) cannot stay baked into the HTML until the next deploy.
+// Statically rendered for speed, regenerated every five minutes so the gallery
+// stays alive and a server-config change (notably HF_MOCK, which the demo
+// banner reflects) cannot stay baked into the HTML until the next deploy.
 export const revalidate = 300;
-
-const PROMISES = [
-  {
-    title: 'Credits never expire',
-    body: 'Not at renewal, not after 30 days, not ever. There is no expiry column in our database — we could not take them back if we wanted to.',
-    tone: 'pink',
-  },
-  {
-    title: 'Refunds you do not have to ask for',
-    body: 'Failed, blocked, timed out, or a near-identical repeat? The credits are back in your wallet before you notice, with a line in your ledger saying why.',
-    tone: 'blue',
-  },
-  {
-    title: 'The price is on the button',
-    body: 'Every Generate button says exactly what it costs before you press it. If the price changed while you were reading, we refuse the job rather than charge the new one.',
-    tone: 'yellow',
-  },
-];
 
 export default async function LandingPage() {
   let gallery: GalleryItem[] = [];
+  let stats: { generations?: number; credits_refunded?: number } = {};
   try {
-    gallery = await callPublic<GalleryItem[]>('jv_gallery', { p_limit: 8 });
+    [gallery, stats] = await Promise.all([
+      callPublic<GalleryItem[]>('jv_gallery', { p_limit: 12 }),
+      callPublic<{ generations: number; credits_refunded: number }>('jv_stats'),
+    ]);
   } catch {
-    gallery = [];
+    /* an empty page is better than a fabricated one */
   }
 
   const draft = MODELS[TASKS.star_in_it.draftModel].credits;
   const final = MODELS[TASKS.star_in_it.finalModel].credits;
 
   return (
-    <div className="pb-10">
+    <div>
       {/* ------------------------------------------------------------ hero --- */}
-      <section className="mx-auto w-full max-w-6xl px-4 pb-10 pt-10 sm:pt-14">
-        <div className="grid items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-          <div>
-            <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-[var(--color-line)] px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-[var(--color-blue)]">
-              {SIGNUP_GRANT_CREDITS} free credits · no signup
-            </p>
-            <h1 className="text-4xl font-extrabold leading-[1.04] sm:text-5xl lg:text-6xl">
-              Put yourself in
-              <span className="jv-glow-pink text-[var(--color-pink)]"> the movie.</span>
-            </h1>
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-[var(--color-muted)] sm:text-lg">
-              Upload one selfie. Pick a scene. Get a cinematic video of{' '}
-              <em className="not-italic text-[var(--color-text)]">you</em> in it, in about a minute.
-              No app, no signup, no API key.
-            </p>
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <Link href="/studio" className="jv-btn jv-btn-primary">
-                Put me in a scene — free
-              </Link>
-              <Link href="/gallery" className="jv-btn jv-btn-ghost">
-                See what people made
-              </Link>
-            </div>
-            <p className="mt-4 text-xs text-[var(--color-faint)]">
-              Runs on Seedance 2.5 with face inputs, through the Higgsfield API.
-            </p>
+      <section className="relative overflow-hidden px-4 pb-8 pt-10 sm:pt-16">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-[-18rem] -z-10 h-[34rem] w-[34rem] -translate-x-1/2 rounded-full blur-[120px]"
+          style={{ background: 'radial-gradient(circle, rgba(255,43,214,0.28), transparent 68%)' }}
+        />
+
+        <div className="mx-auto max-w-7xl">
+          <p className="jv-eyebrow mb-5 flex items-center gap-2">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-[var(--color-pink)] jv-pulse" />
+            {SIGNUP_GRANT_CREDITS} free credits · no signup
+          </p>
+
+          <h1 className="jv-display max-w-3xl text-[clamp(2.75rem,12vw,7rem)]">
+            Put yourself
+            <br />
+            in the <span className="text-[var(--color-pink)]">movie</span>.
+          </h1>
+
+          <p className="mt-6 max-w-lg text-[15px] leading-relaxed text-[var(--color-muted)] sm:text-lg">
+            One selfie. One tap. A cinematic video of you in it — about a minute later.
+          </p>
+
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link href="/studio" className="jv-btn jv-btn-primary">
+              Put me in a scene
+            </Link>
+            <Link href="/gallery" className="jv-btn jv-btn-ghost">
+              See the gallery
+            </Link>
           </div>
 
-          <div className="relative mx-auto w-full max-w-sm">
-            <div
-              aria-hidden
-              className="absolute inset-0 -z-10 blur-3xl"
-              style={{
-                background:
-                  'radial-gradient(circle at 50% 45%, rgba(255,43,214,0.5), transparent 62%)',
-              }}
-            />
-            <Image
-              src="/logo-512.png"
-              alt=""
-              width={512}
-              height={512}
-              priority
-              sizes="(max-width: 640px) 60vw, 360px"
-              className="jv-drift mx-auto h-auto w-3/5 object-contain lg:w-4/5"
-            />
-          </div>
+          <p className="mt-5 text-xs text-[var(--color-faint)]">
+            Seedance 2.5 with face inputs, via the Higgsfield API
+          </p>
         </div>
       </section>
 
       {/* --------------------------------------------------------- scenes --- */}
-      <Section className="py-8" eyebrow="One tap" title="Eight scenes. No prompt writing.">
-        <p className="-mt-4 mb-6 max-w-2xl text-sm text-[var(--color-muted)]">
-          You do not have to know how to prompt. Pick the look and we write the shot — camera move,
-          lighting, lens, grade — then you can edit it if you want.
-        </p>
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-          {STAR_PRESETS.map((preset) => (
+      <section className="px-4 py-8 sm:py-12">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-5 flex items-end justify-between gap-4">
+            <div>
+              <p className="jv-eyebrow mb-2">Pick a scene</p>
+              <h2 className="jv-display text-[clamp(1.6rem,6vw,2.75rem)]">
+                Eight looks. No prompt writing.
+              </h2>
+            </div>
             <Link
-              key={preset.id}
               href="/studio?task=star_in_it"
-              className="jv-card p-4 transition-colors hover:border-[var(--color-pink)]"
+              className="hidden shrink-0 text-sm font-semibold text-[var(--color-muted)] transition-colors hover:text-white sm:block"
             >
-              <p className="text-sm font-bold leading-tight">{preset.label}</p>
-              <p className="mt-1 text-xs leading-snug text-[var(--color-muted)]">{preset.hint}</p>
+              All scenes →
             </Link>
-          ))}
+          </div>
+
+          {/* A rail on phones, a grid from tablet up. */}
+          <div className="jv-rail -mx-4 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 sm:mx-0 sm:grid sm:grid-cols-4 sm:px-0 lg:grid-cols-8">
+            {STAR_PRESETS.map((preset) => (
+              <div key={preset.id} className="w-[44vw] shrink-0 snap-start sm:w-auto">
+                <SceneTile preset={preset} href={`/studio?task=star_in_it&scene=${preset.id}`} />
+              </div>
+            ))}
+          </div>
         </div>
-      </Section>
+      </section>
 
       {/* -------------------------------------------------------- gallery --- */}
       {gallery.length > 0 ? (
-        <Section className="py-10" eyebrow="Made here" title="Real outputs, published by their makers">
-          <GalleryGrid items={gallery.slice(0, 8)} />
-          <div className="mt-6">
-            <Link href="/gallery" className="jv-btn jv-btn-ghost">
-              See the whole gallery
-            </Link>
+        <section className="px-4 py-8 sm:py-12">
+          <div className="mx-auto max-w-7xl">
+            <div className="mb-5 flex items-end justify-between gap-4">
+              <div>
+                <p className="jv-eyebrow mb-2">Made here</p>
+                <h2 className="jv-display text-[clamp(1.6rem,6vw,2.75rem)]">
+                  Published by their makers
+                </h2>
+              </div>
+              <Link
+                href="/gallery"
+                className="hidden shrink-0 text-sm font-semibold text-[var(--color-muted)] transition-colors hover:text-white sm:block"
+              >
+                See all →
+              </Link>
+            </div>
+            <GalleryGrid items={gallery.slice(0, 12)} />
           </div>
-        </Section>
+        </section>
       ) : null}
 
-      {/* ----------------------------------------------------- how it works --- */}
-      <Section className="py-10" eyebrow="How it works" title="Three steps, about a minute">
-        <div className="grid gap-3 sm:grid-cols-3">
-          {[
-            ['1', 'Upload a selfie', 'One to three photos of the face. Clear and well lit is all it needs.'],
-            ['2', 'Pick a scene', 'Neon city, action hero, film noir, 80s music video — eight to choose from.'],
-            ['3', 'Get your video', `A ${draft}-credit draft first. Like it? One tap upgrades it to the ${final}-credit final.`],
-          ].map(([step, title, body]) => (
-            <div key={step} className="jv-card p-5">
-              <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-pink)] text-sm font-extrabold text-white">
-                {step}
-              </div>
-              <h3 className="mb-1.5 font-bold">{title}</h3>
-              <p className="text-sm leading-relaxed text-[var(--color-muted)]">{body}</p>
-            </div>
-          ))}
-        </div>
-      </Section>
+      {/* ------------------------------------------------------------ how --- */}
+      <section className="px-4 py-8 sm:py-12">
+        <div className="mx-auto max-w-7xl">
+          <p className="jv-eyebrow mb-2">How it works</p>
+          <h2 className="jv-display mb-7 text-[clamp(1.6rem,6vw,2.75rem)]">Three steps</h2>
 
-      {/* -------------------------------------------------------- promises --- */}
-      <Section className="py-10" eyebrow="The deal" title="Three promises, kept in the code">
-        <div className="grid gap-4 sm:grid-cols-3">
-          {PROMISES.map((promise) => (
-            <div key={promise.title} className="jv-card p-5">
-              <div
-                className="mb-3 h-1 w-10 rounded-full"
-                style={{ background: `var(--color-${promise.tone})` }}
-              />
-              <h3 className="mb-2 text-lg font-bold">{promise.title}</h3>
-              <p className="text-sm leading-relaxed text-[var(--color-muted)]">{promise.body}</p>
-            </div>
-          ))}
+          <ol className="grid gap-px overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-line-soft)] sm:grid-cols-3">
+            {[
+              ['Upload a selfie', 'One to three photos. Clear and well lit is all it needs.'],
+              ['Pick a scene', 'Eight cinematic looks, each already directed for you.'],
+              [
+                'Get your video',
+                `A ${draft}-credit draft first. Like it? One tap makes it the ${final}-credit final.`,
+              ],
+            ].map(([title, body], index) => (
+              <li key={title} className="bg-[var(--color-surface)] p-6">
+                <span className="jv-display block text-4xl text-[var(--color-line)]">
+                  0{index + 1}
+                </span>
+                <h3 className="mt-3 text-base font-bold">{title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-[var(--color-muted)]">{body}</p>
+              </li>
+            ))}
+          </ol>
         </div>
-      </Section>
+      </section>
 
-      {/* --------------------------------------------------------- pricing --- */}
-      <Section className="py-10" eyebrow="Pricing" title="One rate. Every pack. No subscription.">
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {CREDIT_PACKS.map((pack) => (
-            <div key={pack.id} className="jv-card p-4">
-              <p className="text-2xl font-extrabold tabular-nums">{pack.credits.toLocaleString()}</p>
-              <p className="text-xs text-[var(--color-muted)]">credits</p>
-              <p className="mt-3 text-lg font-bold text-[var(--color-pink)]">
-                ${(pack.priceCents / 100).toFixed(0)}
-              </p>
-              <p className="mt-1 text-xs text-[var(--color-faint)]">{pack.yardstick}</p>
-            </div>
-          ))}
-        </div>
-        <p className="mt-4 text-sm text-[var(--color-muted)]">
-          Every pack is 1 credit for 1 cent. A bigger pack buys more credits, never cheaper ones —
-          so there is nothing to work out and nothing to regret. A finished video is{' '}
-          {creditsToUsd(final)}.
-        </p>
-        <div className="mt-6">
-          <Link href="/pricing" className="jv-btn jv-btn-ghost">
-            See the full table
-          </Link>
-        </div>
-      </Section>
-
-      {/* ------------------------------------------------------ comparison --- */}
-      <Section className="py-10" title="How this compares">
-        <div className="jv-card overflow-x-auto">
-          <table className="w-full min-w-[340px] text-left text-sm">
-            <caption className="sr-only">
-              JellyVid compared with the typical AI generation studio
-            </caption>
-            <thead className="border-b border-[var(--color-line)] text-xs uppercase tracking-wider text-[var(--color-muted)]">
-              <tr>
-                <th scope="col" className="p-3 font-bold">What happens when…</th>
-                <th scope="col" className="p-3 font-bold">A typical studio</th>
-                <th scope="col" className="p-3 font-bold text-[var(--color-pink)]">JellyVid</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--color-line)]">
-              {[
-                ['You want to try it', 'Sign up, pick a plan, add a card', 'Type a prompt. That is it.'],
-                ['Your billing period rolls over', 'Unused credits vanish', 'Nothing happens. They are yours.'],
-                ['A generation fails', 'You open a support ticket', 'Refunded before you ask'],
-                ['Moderation blocks you', 'Charged anyway, no reason given', 'Costs $0, plain reason, one-click rewrite'],
-                ['A re-roll returns the same image', 'You pay again', 'Detected and refunded automatically'],
-                ['You want to stop', 'Buried cancellation flow', 'One button refunds the unused balance'],
-              ].map(([scenario, them, us]) => (
-                <tr key={scenario}>
-                  <th scope="row" className="p-3 text-left font-semibold">{scenario}</th>
-                  <td className="p-3 text-[var(--color-muted)]">{them}</td>
-                  <td className="p-3 font-semibold text-[var(--color-text)]">{us}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p className="mt-3 text-xs text-[var(--color-faint)]">
-          &ldquo;A typical studio&rdquo; describes patterns users report across this category. We are
-          not describing any one company.
-        </p>
-      </Section>
-
-      <Section className="py-14">
-        <div className="jv-card p-7 text-center sm:p-10">
-          <h2 className="text-2xl font-extrabold sm:text-3xl">
-            {SIGNUP_GRANT_CREDITS} credits are already yours.
+      {/* ------------------------------------------------------- promises --- */}
+      <section className="px-4 py-8 sm:py-12">
+        <div className="mx-auto max-w-7xl">
+          <p className="jv-eyebrow mb-2">The deal</p>
+          <h2 className="jv-display mb-7 text-[clamp(1.6rem,6vw,2.75rem)]">
+            No games with your money
           </h2>
-          <p className="mx-auto mt-3 max-w-md text-sm text-[var(--color-muted)]">
-            Enough for two drafts and one finished video. No card, no email, no expiry.
+
+          <div className="grid gap-px overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-line-soft)] sm:grid-cols-3">
+            {[
+              ['Credits never expire', 'There is no expiry column in our database.', 'pink'],
+              ['Refunds happen on their own', 'Failed, blocked or duplicate? Already back.', 'blue'],
+              ['The price is on the button', 'Before you press it, not after.', 'yellow'],
+            ].map(([title, body, tone]) => (
+              <div key={title} className="bg-[var(--color-surface)] p-6">
+                <div
+                  className="mb-4 h-0.5 w-8"
+                  style={{ background: `var(--color-${tone})` }}
+                />
+                <h3 className="text-base font-bold">{title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-[var(--color-muted)]">{body}</p>
+              </div>
+            ))}
+          </div>
+
+          {stats.credits_refunded ? (
+            <p className="mt-4 text-sm text-[var(--color-muted)]">
+              <strong className="text-white">{creditsToUsd(stats.credits_refunded)}</strong> refunded
+              automatically so far, across{' '}
+              <strong className="text-white">{stats.generations?.toLocaleString()}</strong>{' '}
+              generations.{' '}
+              <Link href="/stats" className="text-[var(--color-blue)] underline-offset-4 hover:underline">
+                Live numbers
+              </Link>
+            </p>
+          ) : null}
+        </div>
+      </section>
+
+      {/* ----------------------------------------------------------- close --- */}
+      <section className="px-4 py-12 sm:py-16">
+        <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-surface)] px-6 py-14 text-center sm:py-20">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 bottom-[-12rem] h-[24rem] blur-[100px]"
+            style={{
+              background: 'radial-gradient(circle at 50% 50%, rgba(255,43,214,0.35), transparent 70%)',
+            }}
+          />
+          <Image
+            src="/logo-128.png"
+            alt=""
+            width={44}
+            height={44}
+            className="mx-auto mb-6 h-11 w-11 object-contain"
+          />
+          <h2 className="jv-display text-[clamp(1.9rem,8vw,4rem)]">
+            {SIGNUP_GRANT_CREDITS} credits.
+            <br />
+            Already yours.
+          </h2>
+          <p className="mx-auto mt-4 max-w-sm text-sm text-[var(--color-muted)]">
+            No card. No email. No expiry.
           </p>
-          <div className="mt-6 flex justify-center">
+          <div className="mt-8 flex justify-center">
             <Link href="/studio" className="jv-btn jv-btn-primary">
               Put me in a scene
             </Link>
           </div>
         </div>
-      </Section>
+      </section>
     </div>
   );
 }

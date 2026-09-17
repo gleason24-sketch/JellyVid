@@ -220,3 +220,48 @@ The original brief said exactly four. The cast flow earned a fifth, featured
 above the others. Five short cards with the model still chosen for you is not
 the carnival complaint #6 is about; the test now asserts a ceiling of five and
 that the hero is first, rather than an exact list of four.
+
+## The visual rebuild
+
+### Restraint with the accent is what separates a studio site from a landing page
+
+The first design glowed pink on nearly every element — buttons, headings, card
+borders, chips, the wordmark. That reads as cheap regardless of how good the
+engineering underneath is. The category's best-looking work (Higgsfield's own
+site included) is overwhelmingly black, white type and imagery, with the accent
+touching a few percent of the pixels.
+
+So: `--color-ink` is now pure black, `jv-card` (a glowing bordered box, used
+everywhere) became `jv-panel` (a hairline surface, used rarely), and the pink
+glow is reserved for a single element per screen — usually the one primary
+button. Bands are separated by hairlines and background steps rather than by
+stacking boxes inside boxes.
+
+### A real typeface
+
+There was no display face at all — everything was the system UI stack at
+`font-extrabold`, which is why headings read as a SaaS template. Archivo is now
+loaded through `next/font`, and `.jv-display` sets headings uppercase with tight
+negative tracking and 0.92 line-height. That single change does most of the work.
+
+### Media-first, and a mobile tab bar
+
+The page is now built out of tiles rather than paragraphs: a horizontal scene
+rail, a gallery grid, and far less prose. The phone gets a fixed bottom tab bar
+with Create as the one accented control, because a generation tool lives on a
+phone and a phone expects a thumb-reachable bar, not a hamburger.
+
+### Scene tiles degrade into posters, not into holes
+
+Each scene carries a `tone` — two colours standing in for its palette — and an
+optional `previewUrl`. With a preview it plays the clip; without one it renders
+as a poster in the scene's own colours with the name set large. Both states
+share the same geometry, so dropping real previews in later changes no layout.
+This is why the site does not look broken while the generation account has no
+credits: the empty state was designed, not defaulted.
+
+### The demo banner is one line
+
+It was five lines above the fold, which pushed the actual product below it. A
+disclaimer that buries what people came for is its own kind of dishonesty. It
+is now a single line with a small chip, still non-dismissible.

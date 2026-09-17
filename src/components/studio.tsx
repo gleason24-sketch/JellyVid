@@ -69,16 +69,29 @@ function isVideoUrl(url: string | null): boolean {
 export default function Studio({
   initialWallet,
   initialTask,
+  initialPrompt,
+  initialScene,
 }: {
   initialWallet: Wallet | null;
   initialTask?: TaskId;
+  /** Pre-filled when arriving from a remix link. */
+  initialPrompt?: string;
+  /** Pre-selected when arriving from a scene tile. */
+  initialScene?: string;
 }) {
   const [wallet, setWallet] = useState<Wallet | null>(initialWallet);
   const [task, setTask] = useState<TaskId | null>(initialTask ?? 'star_in_it');
-  const [prompt, setPrompt] = useState('');
-  const [presetId, setPresetId] = useState<string | null>(null);
+  const startingTask = initialTask ?? 'star_in_it';
+  const startingPreset = initialScene
+    ? TASKS[startingTask].presets.find((preset) => preset.id === initialScene)
+    : undefined;
+
+  const [prompt, setPrompt] = useState(
+    initialPrompt ?? (startingPreset ? resolvePreset(startingPreset, startingTask) : ''),
+  );
+  const [presetId, setPresetId] = useState<string | null>(startingPreset?.id ?? null);
   const [tier, setTier] = useState<Tier>('draft');
-  const [aspect, setAspect] = useState('9:16');
+  const [aspect, setAspect] = useState(startingPreset?.aspect ?? '9:16');
   const [duration, setDuration] = useState(5);
   const [withAudio, setWithAudio] = useState(true);
   const [modelOverride, setModelOverride] = useState('');
@@ -279,12 +292,12 @@ export default function Studio({
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 pb-24 pt-5">
-      <div className="jv-card mb-5 flex items-center justify-between gap-4 p-4">
+      <div className="jv-panel mb-5 flex items-center justify-between gap-4 p-4">
         {wallet ? (
           <BalanceDisplay credits={wallet.balance_credits} size="sm" />
         ) : (
           <div>
-            <div className="text-xl font-extrabold jv-glow-pink">200 free credits</div>
+            <div className="jv-display text-xl">200 free credits</div>
             <div className="mt-1 text-xs font-semibold text-[var(--color-blue)]">
               Yours the moment you generate. No signup.
             </div>
@@ -296,7 +309,7 @@ export default function Studio({
       </div>
 
       {recoveryCode ? (
-        <div className="jv-card mb-5 border-[var(--color-yellow)] p-4">
+        <div className="jv-panel mb-5 border-[var(--color-yellow)] p-4">
           <p className="text-sm font-bold text-[var(--color-yellow)]">Save your recovery code</p>
           <p className="mt-1 text-sm text-[var(--color-muted)]">
             This is the only way to open this wallet on another device. We will not email it.
@@ -307,12 +320,21 @@ export default function Studio({
         </div>
       ) : null}
 
-      <h1 className="mb-1 text-2xl font-extrabold sm:text-3xl">What are you making?</h1>
-      <p className="mb-4 text-sm text-[var(--color-muted)]">
-        Pick one. We choose the model for you.
-      </p>
+      {initialPrompt ? (
+        <div className="jv-panel mb-5 border-[var(--color-blue)] p-4">
+          <p className="text-sm font-bold text-[var(--color-blue)]">Remixing a scene</p>
+          <p className="mt-1 text-sm text-[var(--color-muted)]">
+            The scene below came from the video you were watching. Add your face and press
+            generate.
+          </p>
+        </div>
+      ) : null}
 
-      <div className="mb-7 grid grid-cols-2 gap-2.5">
+      <p className="jv-eyebrow mb-2">Step 1</p>
+      <h1 className="jv-display mb-4 text-[clamp(1.6rem,7vw,2.25rem)]">What are you making?</h1>
+
+      {/* A horizontal rail: five options, one screen, no scroll-to-choose. */}
+      <div className="jv-rail -mx-4 mb-7 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
         {TASK_LIST.map((item) => {
           const selected = task === item.id;
           return (
@@ -321,32 +343,32 @@ export default function Studio({
               type="button"
               onClick={() => chooseTask(item.id)}
               aria-pressed={selected}
-              className={`jv-card relative flex min-h-[112px] flex-col items-start gap-1.5 p-4 text-left transition-all ${
-                item.featured ? 'col-span-2' : ''
-              } ${
+              className={`relative flex w-[140px] shrink-0 snap-start flex-col items-start gap-2 rounded-[var(--radius-card)] border p-3.5 text-left transition-colors ${
                 selected
-                  ? 'border-[var(--color-pink)] shadow-[0_0_0_1px_var(--color-pink),0_14px_40px_-20px_rgba(255,43,214,0.9)]'
-                  : 'hover:border-[var(--color-pink-soft)]'
+                  ? 'border-[var(--color-pink)] bg-[rgba(255,43,214,0.08)]'
+                  : 'border-[var(--color-line-soft)] bg-[var(--color-surface)] hover:border-[var(--color-line)]'
               }`}
             >
               {item.featured ? (
-                <span className="absolute right-3 top-3 rounded-full bg-[var(--color-yellow)] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-black">
+                <span className="absolute right-2.5 top-2.5 rounded bg-[var(--color-yellow)] px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-black">
                   New
                 </span>
               ) : null}
               <TaskIcon
                 name={item.icon}
-                className={`h-6 w-6 ${selected ? 'text-[var(--color-pink)]' : 'text-[var(--color-blue)]'}`}
+                className={`h-5 w-5 ${selected ? 'text-[var(--color-pink)]' : 'text-[var(--color-muted)]'}`}
               />
-              <span className="text-base font-bold leading-tight">{item.title}</span>
-              <span className="text-xs leading-snug text-[var(--color-muted)]">{item.blurb}</span>
+              <span className="jv-display text-[13px] leading-tight">{item.title}</span>
+              <span className="text-[11px] leading-snug text-[var(--color-muted)]">
+                {item.blurb}
+              </span>
             </button>
           );
         })}
       </div>
 
       {spec ? (
-        <div className="jv-card mb-8 p-4 sm:p-5">
+        <div className="jv-panel mb-8 p-4 sm:p-5">
           {/* ---------------------------------------------- face references --- */}
           {needsFaces ? (
             <div className="mb-5">
@@ -429,31 +451,53 @@ export default function Studio({
           {/* ----------------------------------------------------- scenes --- */}
           {spec.presets.length > 0 ? (
             <div className="mb-5">
-              <span className="mb-2 block text-sm font-bold">
+              <span className="mb-2.5 block text-sm font-bold">
                 Pick a scene{' '}
                 <span className="font-normal text-[var(--color-muted)]">
                   — or write your own below
                 </span>
               </span>
-              <div className="grid grid-cols-2 gap-2">
-                {spec.presets.map((preset) => (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onClick={() => choosePreset(preset)}
-                    aria-pressed={presetId === preset.id}
-                    className={`rounded-xl border px-3 py-2.5 text-left transition-colors ${
-                      presetId === preset.id
-                        ? 'border-[var(--color-pink)] bg-[rgba(255,43,214,0.12)]'
-                        : 'border-[var(--color-line)] hover:border-[var(--color-blue)]'
-                    }`}
-                  >
-                    <span className="block text-sm font-bold leading-tight">{preset.label}</span>
-                    <span className="mt-0.5 block text-[11px] leading-snug text-[var(--color-muted)]">
-                      {preset.hint}
-                    </span>
-                  </button>
-                ))}
+              {/* A rail, so eight scenes cost one screen instead of four. */}
+              <div className="jv-rail -mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+                {spec.presets.map((preset) => {
+                  const selected = presetId === preset.id;
+                  const [from, to] = preset.tone;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => choosePreset(preset)}
+                      aria-pressed={selected}
+                      className={`jv-tile aspect-[3/4] w-[30vw] max-w-[132px] shrink-0 snap-start text-left transition-all sm:w-[120px] ${
+                        selected ? 'ring-2 ring-[var(--color-pink)]' : 'opacity-80 hover:opacity-100'
+                      }`}
+                    >
+                      {preset.previewUrl ? (
+                        <video
+                          src={preset.previewUrl}
+                          muted
+                          loop
+                          autoPlay
+                          playsInline
+                          className="absolute inset-0 h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span
+                          aria-hidden
+                          className="absolute inset-0"
+                          style={{
+                            background: `linear-gradient(155deg, ${from} -20%, ${to} 62%, #000 100%)`,
+                          }}
+                        />
+                      )}
+                      <span className="jv-tile-label block">
+                        <span className="jv-display block text-[13px] text-white">
+                          {preset.label}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           ) : null}
@@ -655,13 +699,13 @@ export default function Studio({
       <div id="results" className="scroll-mt-20">
         {jobs.length > 0 ? (
           <>
-            <h2 className="mb-3 text-lg font-extrabold">Your generations</h2>
+            <h2 className="jv-display mb-3 text-xl">Your generations</h2>
             <div className="space-y-3">
               {jobs.map((job) => {
                 const status = STATUS_COPY[job.status];
                 const running = !TERMINAL.includes(job.status);
                 return (
-                  <article key={job.id} className="jv-card overflow-hidden">
+                  <article key={job.id} className="jv-panel overflow-hidden">
                     {running ? (
                       <div className="flex aspect-video w-full items-center justify-center bg-black/50">
                         <div className="text-center">

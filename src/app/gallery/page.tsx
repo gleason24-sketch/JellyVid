@@ -20,7 +20,7 @@ export default async function GalleryPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-20 pt-10">
-      <h1 className="text-3xl font-extrabold sm:text-4xl">Made with JellyVid</h1>
+      <h1 className="jv-display text-[clamp(2rem,9vw,3.5rem)]">Made with JellyVid</h1>
       <p className="mt-3 max-w-2xl text-[var(--color-muted)]">
         Everything here was published on purpose by the person who made it. Tap one to see the
         prompt and the model behind it.

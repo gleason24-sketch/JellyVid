@@ -36,9 +36,11 @@ export function BalanceDisplay({
   };
   return (
     <div>
-      <div className={`${sizes[size]} font-extrabold tabular-nums jv-glow-pink`}>
+      <div className={`${sizes[size]} jv-display tabular-nums`}>
         {credits.toLocaleString()}{' '}
-        <span className="text-[0.5em] font-semibold text-[var(--color-muted)]">credits</span>
+        <span className="text-[0.5em] font-semibold normal-case text-[var(--color-muted)]">
+          credits
+        </span>
       </div>
       <div className="mt-1 text-xs font-semibold tracking-wide text-[var(--color-blue)]">
         Never expires
@@ -61,11 +63,11 @@ export function Section({
   return (
     <section className={`mx-auto w-full max-w-6xl px-4 ${className}`}>
       {eyebrow ? (
-        <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-[var(--color-blue)]">
-          {eyebrow}
-        </p>
+        <p className="jv-eyebrow mb-2">{eyebrow}</p>
       ) : null}
-      {title ? <h2 className="mb-6 text-2xl font-extrabold sm:text-3xl">{title}</h2> : null}
+      {title ? (
+        <h2 className="jv-display mb-6 text-[clamp(1.6rem,6vw,2.75rem)]">{title}</h2>
+      ) : null}
       {children}
     </section>
   );

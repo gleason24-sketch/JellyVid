@@ -111,7 +111,7 @@ export default function WalletView({
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-20 pt-8">
-      <div className="jv-card mb-6 p-5 sm:p-6">
+      <div className="jv-panel mb-6 p-5 sm:p-6">
         <BalanceDisplay credits={wallet.balance_credits} size="lg" />
         <p className="mt-2 text-sm text-[var(--color-muted)]">
           {creditsToUsd(wallet.balance_credits)} of generation. No expiry date, because there is no
@@ -164,7 +164,7 @@ export default function WalletView({
         ))}
       </div>
 
-      <div className="jv-card divide-y divide-[var(--color-line)]">
+      <div className="jv-panel divide-y divide-[var(--color-line)]">
         {loading ? (
           <p className="p-5 text-sm text-[var(--color-muted)] jv-pulse">Loading…</p>
         ) : entries.length === 0 ? (
@@ -218,7 +218,7 @@ export default function WalletView({
         )}
       </div>
 
-      <div className="jv-card mt-6 p-5">
+      <div className="jv-panel mt-6 p-5">
         <h2 className="text-lg font-bold">Keep this wallet</h2>
         <p className="mt-1 text-sm text-[var(--color-muted)]">
           Optional. Add an email and we will give you a recovery code so you can open this same
@@ -247,7 +247,7 @@ export default function WalletView({
         ) : null}
       </div>
 
-      <div className="jv-card mt-4 p-5">
+      <div className="jv-panel mt-4 p-5">
         <h2 className="text-lg font-bold">Want your money back?</h2>
         <p className="mt-1 text-sm text-[var(--color-muted)]">
           Unused balance is refundable on request. One button, prefilled — no retention flow, no

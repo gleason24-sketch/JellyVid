@@ -57,7 +57,7 @@ export default async function SharePage({ params }: { params: Promise<{ slug: st
 
   return (
     <div className="mx-auto max-w-3xl px-4 pb-20 pt-8">
-      <div className="jv-card overflow-hidden">
+      <div className="jv-panel overflow-hidden">
         {isVideoUrl(share.output_url) ? (
           <video
             src={share.output_url}
@@ -82,15 +82,19 @@ export default async function SharePage({ params }: { params: Promise<{ slug: st
         </div>
       </div>
 
-      <div className="jv-card mt-5 p-6 text-center">
-        <h2 className="text-xl font-extrabold">Made with JellyVid</h2>
+      <div className="jv-panel mt-5 p-6 text-center">
+        <h2 className="text-xl font-extrabold">Want to be in this one?</h2>
         <p className="mx-auto mt-2 max-w-sm text-sm text-[var(--color-muted)]">
-          Credits that never expire. Refunds you don&apos;t have to ask for. 200 free credits, no
-          signup.
+          Remix carries this exact scene into the studio and casts you in it. Upload a selfie,
+          press generate. 200 free credits, no signup.
         </p>
-        <div className="mt-5 flex justify-center">
-          <Link href="/studio" className="jv-btn jv-btn-primary">
-            Make yours
+        <div className="mt-5 flex flex-wrap justify-center gap-3">
+          {/* The whole loop: a viewer of someone else's video becomes the next maker. */}
+          <Link href={`/studio?remix=${share.share_slug}`} className="jv-btn jv-btn-primary">
+            Put me in this scene
+          </Link>
+          <Link href="/gallery" className="jv-btn jv-btn-ghost">
+            See more
           </Link>
         </div>
       </div>

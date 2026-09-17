@@ -4,9 +4,9 @@ import { isMockMode, higgsfieldCredentials } from '@/lib/env';
  * Says out loud when outputs are placeholders.
  *
  * This product's whole argument is that you should be told what you are
- * actually getting. Serving fixture images while implying they came from a
- * frontier model would be exactly the behaviour it exists to oppose, so the
- * banner is not optional and not dismissible.
+ * actually getting, so the notice is not dismissible. It is one line, because
+ * a five-line disclaimer above the fold is its own kind of dishonesty — it
+ * buries the thing people came for.
  */
 export default function DemoBanner() {
   if (!isMockMode()) return null;
@@ -14,16 +14,15 @@ export default function DemoBanner() {
   const configured = higgsfieldCredentials() !== null;
 
   return (
-    <div className="border-b border-[var(--color-yellow)]/40 bg-[rgba(242,255,92,0.08)] px-4 py-2.5">
-      <p className="mx-auto max-w-6xl text-xs leading-relaxed text-[var(--color-yellow)] sm:text-sm">
-        <strong className="font-bold">Demo mode.</strong> Generations return
-        placeholder images, not real AI output
-        {configured
-          ? ', because the connected generation account has no API credits yet.'
-          : ', because no generation credentials are configured yet.'}{' '}
-        <span className="text-[var(--color-muted)]">
-          Everything else here is real: wallets, pricing, the automatic refunds
-          and the live counts on /stats.
+    <div className="border-b border-[var(--color-line-soft)] bg-[var(--color-surface)]">
+      <p className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-2 text-[12px] leading-tight text-[var(--color-muted)]">
+        <span className="shrink-0 rounded bg-[var(--color-yellow)] px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-black">
+          Demo
+        </span>
+        <span className="min-w-0">
+          Outputs are placeholders
+          {configured ? ' until generation credits are loaded' : ' until credentials are set'}.
+          Wallets, refunds and stats are real.
         </span>
       </p>
     </div>

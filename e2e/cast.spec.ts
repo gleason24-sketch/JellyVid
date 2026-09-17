@@ -129,3 +129,42 @@ test.describe('the gallery loop', () => {
     await expect(page.locator(`a[href="/s/${slug}"]`).first()).toBeVisible();
   });
 });
+
+test.describe('remix', () => {
+  test('a stranger can re-cast someone else’s scene with their own face', async ({
+    page,
+    request,
+  }) => {
+    // Someone makes and publishes a scene.
+    await request.post('/api/session');
+    const created = await request.post('/api/generate', {
+      data: {
+        task: 'cinematic_shot',
+        tier: 'draft',
+        prompt: 'a lone figure crosses a rain-soaked bridge under sodium light',
+        quotedCredits: 40,
+      },
+    });
+    const { job } = (await created.json()) as { job: { id: string } };
+    for (let attempt = 0; attempt < 30; attempt += 1) {
+      const poll = await request.get(`/api/jobs/${job.id}`);
+      const body = (await poll.json()) as { job: { status: string } };
+      if (!['queued', 'in_progress'].includes(body.job.status)) break;
+      await new Promise((resolve) => setTimeout(resolve, 700));
+    }
+    const shared = await request.post(`/api/jobs/${job.id}/share`);
+    const { url } = (await shared.json()) as { url: string };
+
+    // Someone else watches it and taps remix.
+    await page.goto(url);
+    await page.getByRole('link', { name: 'Put me in this scene' }).click();
+
+    await expect(page.getByText('Remixing a scene')).toBeVisible();
+    const prompt = page.getByLabel('Scene description');
+    // The scene came across, re-pointed at the reference images.
+    await expect(prompt).toHaveValue(/rain-soaked bridge/);
+    await expect(prompt).toHaveValue(/the person in the reference images/);
+    // And it landed on the cast task, which is asking for a face.
+    await expect(page.getByText('1 to 3 photos')).toBeVisible();
+  });
+});

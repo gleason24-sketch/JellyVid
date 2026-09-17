@@ -291,6 +291,10 @@ export interface ScenePreset {
   aspect: string;
   duration: number;
   audio: boolean;
+  /** Two colours that stand in for the scene's palette until a preview exists. */
+  tone: [string, string];
+  /** Set once a real preview clip has been generated for this scene. */
+  previewUrl?: string;
 }
 
 export const STAR_PRESETS: ScenePreset[] = [
@@ -303,6 +307,7 @@ export const STAR_PRESETS: ScenePreset[] = [
     aspect: '9:16',
     duration: 5,
     audio: true,
+    tone: ['#ff2bd6', '#1b0f4a']
   },
   {
     id: 'action-hero',
@@ -313,6 +318,7 @@ export const STAR_PRESETS: ScenePreset[] = [
     aspect: '9:16',
     duration: 5,
     audio: true,
+    tone: ['#ff6a1f', '#2b0806']
   },
   {
     id: 'fashion',
@@ -323,6 +329,7 @@ export const STAR_PRESETS: ScenePreset[] = [
     aspect: '9:16',
     duration: 5,
     audio: false,
+    tone: ['#f5f0e8', '#3a3a3a']
   },
   {
     id: 'eighties',
@@ -333,6 +340,7 @@ export const STAR_PRESETS: ScenePreset[] = [
     aspect: '9:16',
     duration: 5,
     audio: true,
+    tone: ['#ff3cac', '#2b1055']
   },
   {
     id: 'noir',
@@ -343,6 +351,7 @@ export const STAR_PRESETS: ScenePreset[] = [
     aspect: '9:16',
     duration: 5,
     audio: true,
+    tone: ['#d9d9d9', '#0a0a0a']
   },
   {
     id: 'space',
@@ -353,6 +362,7 @@ export const STAR_PRESETS: ScenePreset[] = [
     aspect: '9:16',
     duration: 5,
     audio: true,
+    tone: ['#6fe9ff', '#04122e']
   },
   {
     id: 'western',
@@ -363,6 +373,7 @@ export const STAR_PRESETS: ScenePreset[] = [
     aspect: '16:9',
     duration: 5,
     audio: true,
+    tone: ['#ffb347', '#3d1e08']
   },
   {
     id: 'red-carpet',
@@ -373,6 +384,7 @@ export const STAR_PRESETS: ScenePreset[] = [
     aspect: '9:16',
     duration: 5,
     audio: true,
+    tone: ['#ffd84a', '#2a0413']
   },
 ];
 

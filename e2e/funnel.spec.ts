@@ -78,7 +78,7 @@ test.describe('landing page', () => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText('movie');
     await expect(page.getByRole('heading', { name: 'Credits never expire' })).toBeVisible();
     await expect(page.getByText(`${SIGNUP_GRANT} free credits`).first()).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Put me in a scene — free' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Put me in a scene' }).first()).toBeVisible();
   });
 
   test('has no horizontal scroll on a phone', async ({ page }) => {
@@ -246,8 +246,8 @@ test.describe('sharing and proof', () => {
     const context = await page.context().browser()?.newContext();
     const anonymous = await (context ?? page.context()).newPage();
     await anonymous.goto(url);
-    await expect(anonymous.getByRole('heading', { name: 'Made with JellyVid' })).toBeVisible();
-    await expect(anonymous.getByRole('link', { name: 'Make yours' })).toBeVisible();
+    await expect(anonymous.getByRole('heading', { name: 'Want to be in this one?' })).toBeVisible();
+    await expect(anonymous.getByRole('link', { name: 'Put me in this scene' })).toBeVisible();
     await anonymous.close();
     await context?.close();
   });

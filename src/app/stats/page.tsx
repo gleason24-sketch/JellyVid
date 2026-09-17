@@ -61,7 +61,7 @@ export default async function StatsPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 pb-20 pt-10">
-      <h1 className="text-3xl font-extrabold sm:text-4xl">Live from the database</h1>
+      <h1 className="jv-display text-[clamp(2rem,9vw,3.5rem)]">Live from the database</h1>
       <p className="mt-3 max-w-2xl text-[var(--color-muted)]">
         Not a marketing page. These are counts read from the production tables when you loaded
         this, including the one number most studios would never publish: how much money we handed
@@ -70,7 +70,7 @@ export default async function StatsPage() {
 
       <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3">
         {tiles.map((tile) => (
-          <div key={tile.label} className="jv-card p-4">
+          <div key={tile.label} className="jv-panel p-4">
             <p
               className="text-3xl font-extrabold tabular-nums"
               style={{ color: `var(--color-${tile.tone})` }}
@@ -82,7 +82,7 @@ export default async function StatsPage() {
         ))}
       </div>
 
-      <div className="jv-card mt-4 p-5">
+      <div className="jv-panel mt-4 p-5">
         <p className="text-sm text-[var(--color-muted)]">
           That is{' '}
           <strong className="text-[var(--color-text)]">
@@ -97,8 +97,8 @@ export default async function StatsPage() {
 
       {Object.keys(stats.refunds_by_reason).length > 0 ? (
         <>
-          <h2 className="mt-10 text-xl font-extrabold">Why we refunded</h2>
-          <div className="jv-card mt-3 divide-y divide-[var(--color-line)]">
+          <h2 className="jv-display mt-10 text-xl">Why we refunded</h2>
+          <div className="jv-panel mt-3 divide-y divide-[var(--color-line)]">
             {Object.entries(stats.refunds_by_reason).map(([reason, count]) => (
               <div key={reason} className="flex items-center justify-between p-4">
                 <span className="text-sm">{REASON_LABELS[reason] ?? reason}</span>

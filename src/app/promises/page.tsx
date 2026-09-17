@@ -57,8 +57,8 @@ const PROMISES = [
 export default function PromisesPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 pb-20 pt-10">
-      <h1 className="text-3xl font-extrabold sm:text-4xl">
-        Ten complaints. <span className="jv-glow-pink text-[var(--color-pink)]">Ten fixes.</span>
+      <h1 className="jv-display text-[clamp(2rem,9vw,3.5rem)]">
+        Ten complaints. <span className="text-[var(--color-pink)]">Ten fixes.</span>
       </h1>
       <p className="mt-3 text-[var(--color-muted)]">
         This product is a list of grievances about AI generation studios, each one turned into a
@@ -67,7 +67,7 @@ export default function PromisesPage() {
 
       <ol className="mt-8 space-y-4">
         {PROMISES.map((promise, index) => (
-          <li key={promise.complaint} className="jv-card p-5">
+          <li key={promise.complaint} className="jv-panel p-5">
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-yellow)]">
               Complaint {index + 1}
             </p>
